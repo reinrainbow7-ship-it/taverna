@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Taverna</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ヘッダー -->
+<header>
+  <div class="logo">Taverna <span>お気に入りのお店を記録する</span></div>
+</header>
+
+<!-- メインコンテンツ -->
+<main>
+  <div class="toolbar">
+    <div class="store-count">
+      <strong id="count">0</strong> 件のお店
+    </div>
+    <div class="search-wrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="search" id="searchInput" placeholder="店名・エリアで検索…" oninput="renderCards()" />
+    </div>
+    <button class="btn-primary" onclick="openModal()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      お店を追加
+    </button>
+  </div>
+
+  <!-- カードグリッド -->
+  <div class="grid" id="grid"></div>
+</main>
+
+<!-- お店 追加/編集モーダル -->
+<div class="overlay" id="overlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="modalTitle">お店を登録する</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <form id="storeForm" onsubmit="handleSubmit(event)">
+      <input type="hidden" id="editId" />
+
+      <div class="form-group">
+        <label>店名 <span class="req">*</span></label>
+        <input type="text" id="f-name" placeholder="例: ビストロ タヴェルナ" required />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>場所 <span class="req">*</span></label>
+          <input type="text" id="f-area" placeholder="例: 渋谷" required />
+        </div>
+        <div class="form-group">
+          <label>駐車場</label>
+          <select id="f-parking">
+            <option value="">未設定</option>
+            <option value="あり">あり</option>
+            <option value="なし">なし</option>
+            <option value="近隣にあり">近隣にあり</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>公式SNS <span class="opt">任意</span></label>
+        <input type="url" id="f-sns" placeholder="https://instagram.com/…" />
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-ghost" onclick="closeModal()">キャンセル</button>
+        <button type="submit" class="btn-primary" id="submitBtn">登録する</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- コンテキストメニュー -->
+<div class="ctx-menu" id="ctxMenu">
+  <div class="ctx-item" onclick="editStore()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+    </svg>
+    編集
+  </div>
+  <div class="ctx-item danger" onclick="deleteStore()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="3 6 5 6 21 6"/>
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+      <path d="M10 11v6M14 11v6"/>
+    </svg>
+    削除
+  </div>
+</div>
+
+<!-- トースト通知 -->
+<div class="toast" id="toast"></div>
+
+<!-- スクリプト（依存順に読み込む） -->
+<script src="js/utils.js"></script>
+<script src="js/stores.js"></script>
+<script>
+  // ─── 初期化 ───
+  renderCards();
+
+  // ─── グローバルイベント ───
+  document.addEventListener('click', e => {
+    if (!document.getElementById('ctxMenu').contains(e.target)) closeCtxMenu();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeModal(); closeCtxMenu(); }
+  });
+</script>
+
+</body>
+</html>
