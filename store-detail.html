@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Taverna</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* ─── 戻るボタン ─── */
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: none; border: none; cursor: pointer;
+      color: var(--sub); font-size: 14px;
+      padding: 6px 0; transition: color .15s;
+    }
+    .back-btn:hover { color: var(--accent); }
+
+    /* ─── お店情報ヘッダー ─── */
+    .store-header {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin: 24px 0;
+      box-shadow: var(--shadow);
+    }
+    .store-header-top {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 12px;
+      margin-bottom: 14px;
+    }
+    .store-title { font-size: 22px; font-weight: 700; }
+    .store-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    /* ─── セクション ─── */
+    .section-title {
+      font-size: 15px; font-weight: 700;
+      margin-bottom: 14px;
+      display: flex; align-items: center;
+      justify-content: space-between;
+    }
+
+    /* ─── 訪問カード ─── */
+    .visit-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex; align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow);
+    }
+    .visit-card-left { display: flex; align-items: center; gap: 16px; }
+    .visit-date { font-size: 14px; font-weight: 600; color: var(--text); }
+    .visit-rating { display: flex; gap: 2px; }
+    .star { font-size: 16px; color: #ddd; }
+    .star.filled { color: #f5a623; }
+
+    .visit-delete-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--sub); padding: 4px; border-radius: 6px;
+      transition: color .15s;
+    }
+    .visit-delete-btn:hover { color: #c0392b; }
+
+    .visit-empty {
+      text-align: center; padding: 40px 20px;
+      color: var(--sub); font-size: 14px;
+    }
+
+    /* ─── メニューカード ─── */
+    .menu-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 12px;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow);
+    }
+    .menu-card-main { flex: 1; min-width: 0; }
+    .menu-name { font-size: 15px; font-weight: 600; }
+    .menu-price {
+      font-size: 13px; color: var(--accent);
+      font-weight: 600; margin-top: 4px;
+    }
+    .menu-memo {
+      font-size: 13px; color: var(--sub);
+      margin-top: 6px; line-height: 1.5;
+      white-space: pre-wrap; word-break: break-all;
+    }
+    .menu-delete-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--sub); padding: 4px; border-radius: 6px;
+      transition: color .15s; flex-shrink: 0;
+    }
+    .menu-delete-btn:hover { color: #c0392b; }
+    .menu-empty {
+      text-align: center; padding: 40px 20px;
+      color: var(--sub); font-size: 14px;
+    }
+
+    /* ─── 訪問モーダル ─── */
+    .star-input-row {
+      display: flex; gap: 8px; margin-top: 4px;
+    }
+    .star-input {
+      font-size: 28px; cursor: pointer;
+      background: none; border: none;
+      color: #ddd; line-height: 1;
+      transition: color .1s, transform .1s;
+      padding: 0;
+    }
+    .star-input.active { color: #f5a623; }
+    .star-input:hover { transform: scale(1.2); }
+
+    /* ─── メモセクション ─── */
+    .memo-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin: 16px 0 28px;
+      box-shadow: var(--shadow);
+    }
+    .memo-textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      background: var(--bg);
+      color: var(--text);
+      resize: vertical;
+      outline: none;
+      transition: border .15s;
+      box-sizing: border-box;
+      line-height: 1.6;
+    }
+    .memo-textarea:focus { border-color: var(--accent); }
+    .memo-save-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<header>
+  <div class="logo">Taverna <span>お気に入りのお店を記録する</span></div>
+</header>
+
+<main>
+  <!-- 戻るボタン -->
+  <a class="back-btn" href="index.html">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="15 18 9 12 15 6"/>
+    </svg>
+    一覧に戻る
+  </a>
+
+  <!-- お店情報 -->
+  <div class="store-header" id="store-header">
+    <!-- JS で描画 -->
+  </div>
+
+  <!-- メモセクション -->
+  <div class="memo-section">
+    <div class="section-title" style="margin-bottom: 10px;">
+      <span>メモ</span>
+    </div>
+    <textarea
+      id="store-memo"
+      class="memo-textarea"
+      rows="4"
+      placeholder="気になったことをメモしよう！"
+    ></textarea>
+    <div class="memo-save-row">
+      <button class="btn-primary" onclick="saveMemo()">保存する</button>
+    </div>
+  </div>
+
+  <!-- 訪問ログセクション -->
+  <div class="section-title">
+    <span>訪問ログ</span>
+    <button class="btn-primary" onclick="openVisitModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      訪問を記録する
+    </button>
+  </div>
+
+  <div id="visit-list">
+    <!-- JS で描画 -->
+  </div>
+
+  <!-- メニュー記録セクション -->
+  <div class="section-title" style="margin-top: 36px;">
+    <span>メニュー記録</span>
+    <button class="btn-primary" onclick="openMenuModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      メニューを追加
+    </button>
+  </div>
+
+  <div id="menu-list">
+    <!-- JS で描画 -->
+  </div>
+</main>
+
+<!-- 訪問記録モーダル -->
+<div class="overlay" id="visit-overlay" onclick="handleVisitOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-title">
+      <span>訪問を記録する</span>
+      <button class="modal-close" onclick="closeVisitModal()">✕</button>
+    </div>
+
+    <form id="visitForm" onsubmit="handleVisitSubmit(event)">
+      <div class="form-group">
+        <label>来店日 <span class="req">*</span></label>
+        <input type="date" id="v-date" required />
+      </div>
+
+      <div class="form-group">
+        <label>評価 <span class="req">*</span></label>
+        <div class="star-input-row" id="star-input-row">
+          <button type="button" class="star-input" data-value="1" onclick="setRating(1)">☆</button>
+          <button type="button" class="star-input" data-value="2" onclick="setRating(2)">☆</button>
+          <button type="button" class="star-input" data-value="3" onclick="setRating(3)">☆</button>
+          <button type="button" class="star-input" data-value="4" onclick="setRating(4)">☆</button>
+          <button type="button" class="star-input" data-value="5" onclick="setRating(5)">☆</button>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-ghost" onclick="closeVisitModal()">キャンセル</button>
+        <button type="submit" class="btn-primary">記録する</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- メニュー追加モーダル -->
+<div class="overlay" id="menu-overlay" onclick="handleMenuOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-title">
+      <span>メニューを追加</span>
+      <button class="modal-close" onclick="closeMenuModal()">✕</button>
+    </div>
+
+    <form id="menuForm" onsubmit="handleMenuSubmit(event)">
+      <div class="form-group">
+        <label>メニュー名 <span class="req">*</span></label>
+        <input type="text" id="m-name" placeholder="例：塩ラーメン" required />
+      </div>
+
+      <div class="form-group">
+        <label>価格 <span class="opt">任意</span></label>
+        <input type="number" id="m-price" placeholder="例：900" min="0" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none;background:var(--surface);transition:border .15s;" />
+      </div>
+
+      <div class="form-group">
+        <label>メモ <span class="opt">任意</span></label>
+        <textarea id="m-memo" rows="3" placeholder="例：スープが濃くておいしい。辛さ増し無料。"></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-ghost" onclick="closeMenuModal()">キャンセル</button>
+        <button type="submit" class="btn-primary">追加する</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- トースト -->
+<div class="toast" id="toast"></div>
+
+<script src="js/utils.js"></script>
+<script src="js/visits.js"></script>
+<script src="js/menu.js"></script>
+<script>
+  // ─── お店情報を描画 ───
+  function renderStoreHeader() {
+    const storeId = new URLSearchParams(location.search).get('id');
+    const stores = JSON.parse(localStorage.getItem('taverna_stores') || '[]');
+    const store = stores.find(s => s.id === storeId);
+
+    if (!store) {
+      document.getElementById('store-header').innerHTML =
+        '<p style="color:var(--sub)">お店が見つかりませんでした。</p>';
+      return;
+    }
+
+    document.title = `${store.name} - Taverna`;
+
+    document.getElementById('store-header').innerHTML = `
+      <div class="store-header-top">
+        <div class="store-title">${esc(store.name)}</div>
+      </div>
+      <div class="store-tags">
+        <span class="card-tag">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+          ${esc(store.area)}
+        </span>
+        ${store.parking ? `<span class="card-tag">🅿 ${esc(store.parking)}</span>` : ''}
+        ${store.sns ? `
+          <a href="${esc(store.sns)}" target="_blank" rel="noopener"
+             style="font-size:12px; color:var(--accent); text-decoration:none;">
+            🔗 ${esc(store.sns.replace(/^https?:\/\/(www\.)?/, ''))}
+          </a>` : ''}
+      </div>
+    `;
+  }
+
+  function handleVisitOverlayClick(e) {
+    if (e.target === document.getElementById('visit-overlay')) closeVisitModal();
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeVisitModal();
+  });
+
+  // ─── メモ ───
+  function loadMemo() {
+    const stores = JSON.parse(localStorage.getItem('taverna_stores') || '[]');
+    const store = stores.find(s => s.id === currentStoreId);
+    if (store && store.memo) {
+      document.getElementById('store-memo').value = store.memo;
+    }
+  }
+
+  function saveMemo() {
+    const memo = document.getElementById('store-memo').value;
+    const stores = JSON.parse(localStorage.getItem('taverna_stores') || '[]');
+    const updated = stores.map(s =>
+      s.id === currentStoreId ? { ...s, memo } : s
+    );
+    localStorage.setItem('taverna_stores', JSON.stringify(updated));
+    showToast('メモを保存しました ✏️');
+  }
+
+  // ─── 初期化 ───
+  const currentStoreId = new URLSearchParams(location.search).get('id');
+  renderStoreHeader();
+  loadMemo();
+  renderVisits(currentStoreId);
+  renderMenus(currentStoreId);
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeMenuModal();
+  });
+</script>
+</body>
+</html>
