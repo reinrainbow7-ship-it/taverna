@@ -169,22 +169,6 @@
     <!-- JS で描画 -->
   </div>
 
-  <!-- メモセクション -->
-  <div class="memo-section">
-    <div class="section-title" style="margin-bottom: 10px;">
-      <span>メモ</span>
-    </div>
-    <textarea
-      id="store-memo"
-      class="memo-textarea"
-      rows="4"
-      placeholder="気になったことをメモしよう！"
-    ></textarea>
-    <div class="memo-save-row">
-      <button class="btn-primary" onclick="saveMemo()">保存する</button>
-    </div>
-  </div>
-
   <!-- 訪問ログセクション -->
   <div class="section-title">
     <span>訪問ログ</span>
@@ -213,6 +197,22 @@
 
   <div id="menu-list">
     <!-- JS で描画 -->
+  </div>
+
+  <!-- メモセクション -->
+  <div class="memo-section" style="margin-top: 36px;">
+    <div class="section-title" style="margin-bottom: 10px;">
+      <span>メモ</span>
+    </div>
+    <textarea
+      id="store-memo"
+      class="memo-textarea"
+      rows="4"
+      placeholder="気になったことをメモしよう！"
+    ></textarea>
+    <div class="memo-save-row">
+      <button class="btn-primary" onclick="saveMemo()">保存する</button>
+    </div>
   </div>
 </main>
 
@@ -348,19 +348,4 @@
       s.id === currentStoreId ? { ...s, memo } : s
     );
     localStorage.setItem('taverna_stores', JSON.stringify(updated));
-    showToast('メモを保存しました ✏️');
-  }
-
-  // ─── 初期化 ───
-  const currentStoreId = new URLSearchParams(location.search).get('id');
-  renderStoreHeader();
-  loadMemo();
-  renderVisits(currentStoreId);
-  renderMenus(currentStoreId);
-
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeMenuModal();
-  });
-</script>
-</body>
-</html>
+    showToast('メモを保存しまし�
