@@ -33,6 +33,9 @@
     </button>
   </div>
 
+  <!-- タグフィルターバー -->
+  <div class="tag-filter-bar" id="tagFilterBar"></div>
+
   <!-- カードグリッド -->
   <div class="grid" id="grid"></div>
 </main>
@@ -72,6 +75,17 @@
       <div class="form-group">
         <label>公式SNS <span class="opt">任意</span></label>
         <input type="url" id="f-sns" placeholder="https://instagram.com/…" />
+      </div>
+
+      <div class="form-group">
+        <label>タグ <span class="opt">任意</span></label>
+        <div class="tag-preset-list" id="tagPresets"></div>
+        <div class="tag-custom-input">
+          <input type="text" id="customTagInput" placeholder="カスタムタグを追加…"
+                 onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomTag()}" />
+          <button type="button" class="btn-tag-add" onclick="addCustomTag()">追加</button>
+        </div>
+        <div class="tag-selected-list" id="tagSelected"></div>
       </div>
 
       <div class="form-actions">

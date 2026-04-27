@@ -243,6 +243,123 @@ select:focus, textarea:focus { border-color: var(--accent); }
 .ctx-item.danger { color: #c0392b; }
 .ctx-item.danger:hover { background: #fdecea; }
 
+/* ─── タグフィルターバー ─── */
+.tag-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.tag-filter-bar:empty { margin-bottom: 0; }
+
+.tag-filter-chip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--sub);
+  transition: all .15s;
+  white-space: nowrap;
+}
+.tag-filter-chip:hover { border-color: var(--accent); color: var(--accent); }
+.tag-filter-chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ─── モーダル内タグセレクター ─── */
+.tag-preset-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.tag-preset-chip {
+  background: var(--tag-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--sub);
+  transition: all .15s;
+}
+.tag-preset-chip:hover { border-color: var(--accent); color: var(--accent); }
+.tag-preset-chip.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.tag-custom-input {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.tag-custom-input input { flex: 1; }
+
+.btn-tag-add {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--sub);
+  white-space: nowrap;
+  transition: all .15s;
+}
+.btn-tag-add:hover { border-color: var(--accent); color: var(--accent); }
+
+.tag-selected-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tag-selected-list:empty { display: none; }
+
+.tag-selected-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 16px;
+  padding: 3px 8px 3px 12px;
+  font-size: 12px;
+}
+.tag-selected-chip button {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,.8);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+  transition: color .1s;
+}
+.tag-selected-chip button:hover { color: #fff; }
+
+/* ─── カード内タグ ─── */
+.store-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 10px;
+}
+.store-tag-chip {
+  background: #fce8e0;
+  color: var(--accent);
+  border-radius: 12px;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
 /* ─── トースト ─── */
 .toast {
   position: fixed; bottom: 24px; left: 50%;
