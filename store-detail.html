@@ -348,4 +348,15 @@
       s.id === currentStoreId ? { ...s, memo } : s
     );
     localStorage.setItem('taverna_stores', JSON.stringify(updated));
-    showToast('メモを保存しまし�
+    showToast('メモを保存しました');
+  }
+
+  // ─── 初期化 ───
+  renderStoreHeader();
+  renderVisitList();
+  renderMenuList();
+  loadMemo();
+</script>
+
+</body>
+</html>
