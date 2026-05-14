@@ -1,30 +1,31 @@
 /* ════════════════════════════════
-   stores.js — お店のデータ管理・表示
+   stores.js — お店のデータ管理・表示（Supabase版）
 ════════════════════════════════ */
-
-const STORAGE_KEY = 'taverna_stores';
 
 const PRESET_TAGS = ['ラーメン', 'カフェ', '海鮮', '焼肉', 'カレー', '居酒屋', 'スイーツ', 'テイクアウト可'];
 
+// ─── キャッシュ ───────────────────
+// Supabase から取得したお店データを一時保存する
+let _stores = [];
+
 // ─── データ管理 ───────────────────
 
-function loadStores() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
-  catch { return []; }
-}
+async function loadStores() {
+  const { data, error } = await db
+    .from('stores')
+    .select('*')
+    .order('created_at', { ascending: false });
 
-function saveStores(stores) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(stores));
+  if (error) { console.error('loadStores error:', error); return []; }
+  return data || [];
 }
-
-let stores = loadStores();
 
 // ─── タグフィルター ───────────────
 
-let activeTagFilters = [];
+let activeTagFilters  = [];
 let _tagFilterOptions = [];
 
-function getAllUsedTags() {
+function getAllUsedTags(stores) {
   const all = new Set();
   stores.forEach(s => (s.tags || []).forEach(t => all.add(t)));
   return [...all];
@@ -33,30 +34,25 @@ function getAllUsedTags() {
 function toggleTagFilter(index) {
   const tag = _tagFilterOptions[index];
   if (!tag) return;
-  if (activeTagFilters.includes(tag)) {
-    activeTagFilters = activeTagFilters.filter(t => t !== tag);
-  } else {
-    activeTagFilters.push(tag);
-  }
-  renderTagFilters();
-  renderCards();
+  activeTagFilters = activeTagFilters.includes(tag)
+    ? activeTagFilters.filter(t => t !== tag)
+    : [...activeTagFilters, tag];
+  renderTagFilters(_stores);
+  applyFiltersAndRender(_stores);
 }
 
 function clearTagFilters() {
   activeTagFilters = [];
-  renderTagFilters();
-  renderCards();
+  renderTagFilters(_stores);
+  applyFiltersAndRender(_stores);
 }
 
-function renderTagFilters() {
+function renderTagFilters(stores) {
   const bar = document.getElementById('tagFilterBar');
-  _tagFilterOptions = getAllUsedTags();
-  activeTagFilters = activeTagFilters.filter(t => _tagFilterOptions.includes(t));
+  _tagFilterOptions = getAllUsedTags(stores);
+  activeTagFilters   = activeTagFilters.filter(t => _tagFilterOptions.includes(t));
 
-  if (_tagFilterOptions.length === 0) {
-    bar.innerHTML = '';
-    return;
-  }
+  if (_tagFilterOptions.length === 0) { bar.innerHTML = ''; return; }
 
   bar.innerHTML =
     `<button class="tag-filter-chip${activeTagFilters.length === 0 ? ' active' : ''}" onclick="clearTagFilters()">すべて</button>` +
@@ -67,9 +63,13 @@ function renderTagFilters() {
 
 // ─── カード描画 ───────────────────
 
-function renderCards() {
-  renderTagFilters();
+async function renderCards() {
+  _stores = await loadStores();
+  renderTagFilters(_stores);
+  applyFiltersAndRender(_stores);
+}
 
+function applyFiltersAndRender(stores) {
   const q = document.getElementById('searchInput').value.trim().toLowerCase();
   let filtered = stores;
 
@@ -96,7 +96,9 @@ function renderCards() {
       <div class="empty">
         <div class="empty-icon">🍽️</div>
         <p>${msg}</p>
-        ${!q && activeTagFilters.length === 0 ? `<button class="btn-primary" onclick="openModal()" style="margin:0 auto">最初のお店を追加する</button>` : ''}
+        ${!q && activeTagFilters.length === 0
+          ? `<button class="btn-primary" onclick="openModal()" style="margin:0 auto">最初のお店を追加する</button>`
+          : ''}
       </div>`;
     return;
   }
@@ -141,25 +143,24 @@ function renderCards() {
 
 // ─── モーダル ─────────────────────
 
-let editingId = null;
+let editingId    = null;
 let selectedTags = [];
 
 function openModal(id = null) {
   editingId = id;
-  const store = id ? stores.find(s => s.id === id) : null;
+  const store = id ? _stores.find(s => s.id === id) : null;
 
   selectedTags = store?.tags ? [...store.tags] : [];
 
-  document.getElementById('modalTitle').textContent = id ? 'お店を編集する' : 'お店を登録する';
-  document.getElementById('submitBtn').textContent = id ? '更新する' : '登録する';
-  document.getElementById('editId').value = id || '';
-  document.getElementById('f-name').value = store?.name || '';
-  document.getElementById('f-area').value = store?.area || '';
-  document.getElementById('f-parking').value = store?.parking || '';
-  document.getElementById('f-sns').value = store?.sns || '';
+  document.getElementById('modalTitle').textContent  = id ? 'お店を編集する' : 'お店を登録する';
+  document.getElementById('submitBtn').textContent   = id ? '更新する' : '登録する';
+  document.getElementById('editId').value            = id || '';
+  document.getElementById('f-name').value            = store?.name    || '';
+  document.getElementById('f-area').value            = store?.area    || '';
+  document.getElementById('f-parking').value         = store?.parking || '';
+  document.getElementById('f-sns').value             = store?.sns     || '';
 
   renderTagSelector();
-
   document.getElementById('overlay').classList.add('open');
   setTimeout(() => document.getElementById('f-name').focus(), 200);
 }
@@ -167,7 +168,7 @@ function openModal(id = null) {
 function closeModal() {
   document.getElementById('overlay').classList.remove('open');
   document.getElementById('storeForm').reset();
-  editingId = null;
+  editingId    = null;
   selectedTags = [];
 }
 
@@ -178,25 +179,20 @@ function handleOverlayClick(e) {
 // ─── タグセレクター（モーダル内） ─────
 
 function renderTagSelector() {
-  const presetEl = document.getElementById('tagPresets');
-  const selectedEl = document.getElementById('tagSelected');
-
-  presetEl.innerHTML = PRESET_TAGS.map((t, i) =>
+  document.getElementById('tagPresets').innerHTML = PRESET_TAGS.map((t, i) =>
     `<button type="button" class="tag-preset-chip${selectedTags.includes(t) ? ' selected' : ''}" onclick="togglePresetTag(${i})">${esc(t)}</button>`
   ).join('');
 
-  selectedEl.innerHTML = selectedTags.map((t, i) =>
+  document.getElementById('tagSelected').innerHTML = selectedTags.map((t, i) =>
     `<span class="tag-selected-chip">${esc(t)}<button type="button" onclick="removeSelectedTag(${i})">×</button></span>`
   ).join('');
 }
 
 function togglePresetTag(index) {
   const tag = PRESET_TAGS[index];
-  if (selectedTags.includes(tag)) {
-    selectedTags = selectedTags.filter(t => t !== tag);
-  } else {
-    selectedTags.push(tag);
-  }
+  selectedTags = selectedTags.includes(tag)
+    ? selectedTags.filter(t => t !== tag)
+    : [...selectedTags, tag];
   renderTagSelector();
 }
 
@@ -207,7 +203,7 @@ function removeSelectedTag(index) {
 
 function addCustomTag() {
   const input = document.getElementById('customTagInput');
-  const tag = input.value.trim();
+  const tag   = input.value.trim();
   if (!tag) return;
   if (!selectedTags.includes(tag)) selectedTags.push(tag);
   input.value = '';
@@ -216,8 +212,9 @@ function addCustomTag() {
 
 // ─── フォーム送信 ─────────────────
 
-function handleSubmit(e) {
+async function handleSubmit(e) {
   e.preventDefault();
+
   const data = {
     name:    document.getElementById('f-name').value.trim(),
     area:    document.getElementById('f-area').value.trim(),
@@ -227,16 +224,21 @@ function handleSubmit(e) {
   };
 
   if (editingId) {
-    stores = stores.map(s => s.id === editingId ? { ...s, ...data } : s);
+    // 既存お店を更新
+    const { error } = await db.from('stores').update(data).eq('id', editingId);
+    if (error) { console.error(error); showToast('エラーが発生しました'); return; }
     showToast('お店情報を更新しました');
   } else {
-    stores.push({ id: genId(), ...data, createdAt: new Date().toISOString() });
+    // 新規登録
+    const { error } = await db.from('stores').insert({
+      id: genId(), ...data, created_at: new Date().toISOString()
+    });
+    if (error) { console.error(error); showToast('エラーが発生しました'); return; }
     showToast('お店を登録しました 🎉');
   }
 
-  saveStores(stores);
-  renderCards();
   closeModal();
+  renderCards();
 }
 
 // ─── コンテキストメニュー ──────────
@@ -248,8 +250,7 @@ function openCtxMenu(e, id) {
   ctxTargetId = id;
   const menu = document.getElementById('ctxMenu');
   menu.classList.add('open');
-
-  const x = Math.min(e.clientX, window.innerWidth - 160);
+  const x = Math.min(e.clientX, window.innerWidth  - 160);
   const y = Math.min(e.clientY, window.innerHeight - 100);
   menu.style.left = x + 'px';
   menu.style.top  = y + 'px';
@@ -266,16 +267,19 @@ function editStore() {
   openModal(id);
 }
 
-function deleteStore() {
+async function deleteStore() {
   if (!ctxTargetId) return;
-  const store = stores.find(s => s.id === ctxTargetId);
+  const store = _stores.find(s => s.id === ctxTargetId);
   if (!store) return;
   if (!confirm(`「${store.name}」を削除しますか？`)) { closeCtxMenu(); return; }
-  stores = stores.filter(s => s.id !== ctxTargetId);
-  saveStores(stores);
-  renderCards();
+
+  // お店を削除（visits・menu_items は ON DELETE CASCADE で自動削除）
+  const { error } = await db.from('stores').delete().eq('id', ctxTargetId);
+  if (error) { console.error(error); showToast('エラーが発生しました'); return; }
+
   closeCtxMenu();
   showToast('削除しました');
+  renderCards();
 }
 
 function handleCardClick(e, id) {

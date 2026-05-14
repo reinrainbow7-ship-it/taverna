@@ -1,27 +1,24 @@
 /* ════════════════════════════════
-   menu.js — メニュー記録の管理・表示
+   menu.js — メニュー記録の管理・表示（Supabase版）
 ════════════════════════════════ */
 
 // ─── データ管理 ───────────────────
 
-function loadMenuItems() {
-  const stores = JSON.parse(localStorage.getItem('taverna_stores') || '[]');
-  const store = stores.find(s => s.id === currentStoreId);
-  return store?.menuItems || [];
-}
+async function loadMenuItems() {
+  const { data, error } = await db
+    .from('menu_items')
+    .select('*')
+    .eq('store_id', currentStoreId)
+    .order('created_at', { ascending: false });
 
-function saveMenuItems(items) {
-  const stores = JSON.parse(localStorage.getItem('taverna_stores') || '[]');
-  const updated = stores.map(s =>
-    s.id === currentStoreId ? { ...s, menuItems: items } : s
-  );
-  localStorage.setItem('taverna_stores', JSON.stringify(updated));
+  if (error) { console.error('loadMenuItems error:', error); return []; }
+  return data || [];
 }
 
 // ─── 描画 ─────────────────────────
 
-function renderMenuList() {
-  const items = loadMenuItems();
+async function renderMenuList() {
+  const items = await loadMenuItems();
   const el = document.getElementById('menu-list');
 
   if (items.length === 0) {
@@ -33,7 +30,7 @@ function renderMenuList() {
     <div class="menu-card">
       <div class="menu-card-main">
         <div class="menu-name">${esc(item.name)}</div>
-        ${item.price !== '' && item.price !== null && item.price !== undefined
+        ${item.price !== null && item.price !== undefined
           ? `<div class="menu-price">¥${Number(item.price).toLocaleString()}</div>`
           : ''}
         ${item.memo
@@ -50,10 +47,10 @@ function renderMenuList() {
   `).join('');
 }
 
-function deleteMenuItem(id) {
+async function deleteMenuItem(id) {
   if (!confirm('このメニューを削除しますか？')) return;
-  const items = loadMenuItems().filter(item => item.id !== id);
-  saveMenuItems(items);
+  const { error } = await db.from('menu_items').delete().eq('id', id);
+  if (error) { console.error(error); showToast('エラーが発生しました'); return; }
   renderMenuList();
   showToast('メニューを削除しました');
 }
@@ -76,21 +73,21 @@ function handleMenuOverlayClick(e) {
 
 // ─── フォーム送信 ─────────────────
 
-function handleMenuSubmit(e) {
+async function handleMenuSubmit(e) {
   e.preventDefault();
 
-  const item = {
-    id:    genId(),
-    name:  document.getElementById('m-name').value.trim(),
-    price: document.getElementById('m-price').value,
-    memo:  document.getElementById('m-memo').value.trim(),
-  };
+  const priceVal = document.getElementById('m-price').value;
+  const { error } = await db.from('menu_items').insert({
+    id:       genId(),
+    store_id: currentStoreId,
+    name:     document.getElementById('m-name').value.trim(),
+    price:    priceVal !== '' ? parseInt(priceVal) : null,
+    memo:     document.getElementById('m-memo').value.trim(),
+  });
 
-  const items = loadMenuItems();
-  items.push(item);
-  saveMenuItems(items);
+  if (error) { console.error(error); showToast('エラーが発生しました'); return; }
 
-  renderMenuList();
   closeMenuModal();
+  renderMenuList();
   showToast('メニューを追加しました');
 }

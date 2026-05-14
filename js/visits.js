@@ -1,29 +1,27 @@
 /* ════════════════════════════════
-   visits.js — 訪問ログの管理・表示
+   visits.js — 訪問ログの管理・表示（Supabase版）
 ════════════════════════════════ */
 
+// URLパラメータからお店IDを取得（menu.js・store-detail.html でも共用）
 const currentStoreId = new URLSearchParams(location.search).get('id');
 
 // ─── データ管理 ───────────────────
 
-function loadVisits() {
-  const stores = JSON.parse(localStorage.getItem('taverna_stores') || '[]');
-  const store = stores.find(s => s.id === currentStoreId);
-  return store?.visits || [];
-}
+async function loadVisits() {
+  const { data, error } = await db
+    .from('visits')
+    .select('*')
+    .eq('store_id', currentStoreId)
+    .order('date', { ascending: false });
 
-function saveVisits(visits) {
-  const stores = JSON.parse(localStorage.getItem('taverna_stores') || '[]');
-  const updated = stores.map(s =>
-    s.id === currentStoreId ? { ...s, visits } : s
-  );
-  localStorage.setItem('taverna_stores', JSON.stringify(updated));
+  if (error) { console.error('loadVisits error:', error); return []; }
+  return data || [];
 }
 
 // ─── 描画 ─────────────────────────
 
-function renderVisitList() {
-  const visits = loadVisits();
+async function renderVisitList() {
+  const visits = await loadVisits();
   const el = document.getElementById('visit-list');
 
   if (visits.length === 0) {
@@ -31,9 +29,7 @@ function renderVisitList() {
     return;
   }
 
-  const sorted = [...visits].sort((a, b) => b.date.localeCompare(a.date));
-
-  el.innerHTML = sorted.map(v => `
+  el.innerHTML = visits.map(v => `
     <div class="visit-card">
       <div class="visit-card-left">
         <div class="visit-date">${esc(v.date)}</div>
@@ -53,10 +49,10 @@ function renderVisitList() {
   `).join('');
 }
 
-function deleteVisit(id) {
+async function deleteVisit(id) {
   if (!confirm('この訪問記録を削除しますか？')) return;
-  const visits = loadVisits().filter(v => v.id !== id);
-  saveVisits(visits);
+  const { error } = await db.from('visits').delete().eq('id', id);
+  if (error) { console.error(error); showToast('エラーが発生しました'); return; }
   renderVisitList();
   showToast('訪問記録を削除しました');
 }
@@ -97,7 +93,7 @@ function updateStarUI(value) {
 
 // ─── フォーム送信 ─────────────────
 
-function handleVisitSubmit(e) {
+async function handleVisitSubmit(e) {
   e.preventDefault();
 
   if (currentRating === 0) {
@@ -105,18 +101,17 @@ function handleVisitSubmit(e) {
     return;
   }
 
-  const visit = {
-    id:     genId(),
-    date:   document.getElementById('v-date').value,
-    rating: currentRating,
-  };
+  const { error } = await db.from('visits').insert({
+    id:       genId(),
+    store_id: currentStoreId,
+    date:     document.getElementById('v-date').value,
+    rating:   currentRating,
+  });
 
-  const visits = loadVisits();
-  visits.push(visit);
-  saveVisits(visits);
+  if (error) { console.error(error); showToast('エラーが発生しました'); return; }
 
-  renderVisitList();
   closeVisitModal();
+  renderVisitList();
   showToast('訪問を記録しました');
 }
 

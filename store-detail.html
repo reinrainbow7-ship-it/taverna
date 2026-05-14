@@ -284,17 +284,21 @@
 <!-- トースト -->
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/utils.js"></script>
+<script src="js/supabase.js"></script>
 <script src="js/visits.js"></script>
 <script src="js/menu.js"></script>
 <script>
-  // ─── お店情報を描画 ───
-  function renderStoreHeader() {
-    const storeId = new URLSearchParams(location.search).get('id');
-    const stores = JSON.parse(localStorage.getItem('taverna_stores') || '[]');
-    const store = stores.find(s => s.id === storeId);
+  // ─── お店情報を描画（Supabase版）───
+  async function renderStoreHeader() {
+    const { data: store, error } = await db
+      .from('stores')
+      .select('*')
+      .eq('id', currentStoreId)
+      .single();
 
-    if (!store) {
+    if (error || !store) {
       document.getElementById('store-header').innerHTML =
         '<p style="color:var(--sub)">お店が見つかりませんでした。</p>';
       return;
@@ -329,25 +333,28 @@
   }
 
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeVisitModal();
+    if (e.key === 'Escape') { closeVisitModal(); closeMenuModal(); }
   });
 
-  // ─── メモ ───
-  function loadMemo() {
-    const stores = JSON.parse(localStorage.getItem('taverna_stores') || '[]');
-    const store = stores.find(s => s.id === currentStoreId);
-    if (store && store.memo) {
-      document.getElementById('store-memo').value = store.memo;
+  // ─── メモ（Supabase版）───
+  async function loadMemo() {
+    const { data } = await db
+      .from('stores')
+      .select('memo')
+      .eq('id', currentStoreId)
+      .single();
+    if (data?.memo) {
+      document.getElementById('store-memo').value = data.memo;
     }
   }
 
-  function saveMemo() {
+  async function saveMemo() {
     const memo = document.getElementById('store-memo').value;
-    const stores = JSON.parse(localStorage.getItem('taverna_stores') || '[]');
-    const updated = stores.map(s =>
-      s.id === currentStoreId ? { ...s, memo } : s
-    );
-    localStorage.setItem('taverna_stores', JSON.stringify(updated));
+    const { error } = await db
+      .from('stores')
+      .update({ memo })
+      .eq('id', currentStoreId);
+    if (error) { showToast('エラーが発生しました'); return; }
     showToast('メモを保存しました');
   }
 
