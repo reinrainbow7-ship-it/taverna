@@ -281,6 +281,60 @@
   </div>
 </div>
 
+<!-- お店編集モーダル -->
+<div class="overlay" id="edit-overlay" onclick="handleEditOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-title">
+      <span>お店を編集する</span>
+      <button class="modal-close" onclick="closeEditModal()">✕</button>
+    </div>
+
+    <form id="editStoreForm" onsubmit="handleEditSubmit(event)">
+      <div class="form-group">
+        <label>店名 <span class="req">*</span></label>
+        <input type="text" id="e-name" placeholder="例: ビストロ タヴェルナ" required />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>場所 <span class="req">*</span></label>
+          <input type="text" id="e-area" placeholder="例: 渋谷" required />
+        </div>
+        <div class="form-group">
+          <label>駐車場</label>
+          <select id="e-parking">
+            <option value="">未設定</option>
+            <option value="あり">あり</option>
+            <option value="なし">なし</option>
+            <option value="近隣にあり">近隣にあり</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>公式SNS <span class="opt">任意</span></label>
+        <input type="url" id="e-sns" placeholder="https://instagram.com/…" />
+      </div>
+
+      <div class="form-group">
+        <label>タグ <span class="opt">任意</span></label>
+        <div class="tag-preset-list" id="e-tagPresets"></div>
+        <div class="tag-custom-input">
+          <input type="text" id="e-customTagInput" placeholder="カスタムタグを追加…"
+                 onkeydown="if(event.key==='Enter'){event.preventDefault();addEditCustomTag()}" />
+          <button type="button" class="btn-tag-add" onclick="addEditCustomTag()">追加</button>
+        </div>
+        <div class="tag-selected-list" id="e-tagSelected"></div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-ghost" onclick="closeEditModal()">キャンセル</button>
+        <button type="submit" class="btn-primary">更新する</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- トースト -->
 <div class="toast" id="toast"></div>
 
@@ -309,6 +363,13 @@
     document.getElementById('store-header').innerHTML = `
       <div class="store-header-top">
         <div class="store-title">${esc(store.name)}</div>
+        <button class="btn-ghost" onclick="openEditModal()" style="flex-shrink:0; display:flex; align-items:center; gap:6px; font-size:13px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+          編集
+        </button>
       </div>
       <div class="store-tags">
         <span class="card-tag">
@@ -325,6 +386,10 @@
             🔗 ${esc(store.sns.replace(/^https?:\/\/(www\.)?/, ''))}
           </a>` : ''}
       </div>
+      ${(store.tags || []).length > 0 ? `
+      <div class="store-tags" style="margin-top:12px;">
+        ${store.tags.map(t => `<span class="store-tag-chip">${esc(t)}</span>`).join('')}
+      </div>` : ''}
     `;
   }
 
@@ -333,8 +398,89 @@
   }
 
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeVisitModal(); closeMenuModal(); }
+    if (e.key === 'Escape') { closeVisitModal(); closeMenuModal(); closeEditModal(); }
   });
+
+  // ─── お店編集モーダル ───
+  const PRESET_TAGS = ['ラーメン', 'カフェ', '海鮮', '焼肉', 'カレー', '居酒屋', 'スイーツ', 'テイクアウト可'];
+  let editSelectedTags = [];
+
+  async function openEditModal() {
+    const { data: store, error } = await db
+      .from('stores')
+      .select('*')
+      .eq('id', currentStoreId)
+      .single();
+    if (error || !store) return;
+
+    editSelectedTags = store.tags ? [...store.tags] : [];
+    document.getElementById('e-name').value    = store.name    || '';
+    document.getElementById('e-area').value    = store.area    || '';
+    document.getElementById('e-parking').value = store.parking || '';
+    document.getElementById('e-sns').value     = store.sns     || '';
+
+    renderEditTagSelector();
+    document.getElementById('edit-overlay').classList.add('open');
+    setTimeout(() => document.getElementById('e-name').focus(), 200);
+  }
+
+  function closeEditModal() {
+    document.getElementById('edit-overlay').classList.remove('open');
+    document.getElementById('editStoreForm').reset();
+    editSelectedTags = [];
+  }
+
+  function handleEditOverlayClick(e) {
+    if (e.target === document.getElementById('edit-overlay')) closeEditModal();
+  }
+
+  function renderEditTagSelector() {
+    document.getElementById('e-tagPresets').innerHTML = PRESET_TAGS.map((t, i) =>
+      `<button type="button" class="tag-preset-chip${editSelectedTags.includes(t) ? ' selected' : ''}" onclick="toggleEditPresetTag(${i})">${esc(t)}</button>`
+    ).join('');
+
+    document.getElementById('e-tagSelected').innerHTML = editSelectedTags.map((t, i) =>
+      `<span class="tag-selected-chip">${esc(t)}<button type="button" onclick="removeEditSelectedTag(${i})">×</button></span>`
+    ).join('');
+  }
+
+  function toggleEditPresetTag(index) {
+    const tag = PRESET_TAGS[index];
+    editSelectedTags = editSelectedTags.includes(tag)
+      ? editSelectedTags.filter(t => t !== tag)
+      : [...editSelectedTags, tag];
+    renderEditTagSelector();
+  }
+
+  function removeEditSelectedTag(index) {
+    editSelectedTags.splice(index, 1);
+    renderEditTagSelector();
+  }
+
+  function addEditCustomTag() {
+    const input = document.getElementById('e-customTagInput');
+    const tag   = input.value.trim();
+    if (!tag) return;
+    if (!editSelectedTags.includes(tag)) editSelectedTags.push(tag);
+    input.value = '';
+    renderEditTagSelector();
+  }
+
+  async function handleEditSubmit(e) {
+    e.preventDefault();
+    const data = {
+      name:    document.getElementById('e-name').value.trim(),
+      area:    document.getElementById('e-area').value.trim(),
+      parking: document.getElementById('e-parking').value,
+      sns:     document.getElementById('e-sns').value.trim(),
+      tags:    [...editSelectedTags],
+    };
+    const { error } = await db.from('stores').update(data).eq('id', currentStoreId);
+    if (error) { showToast('エラーが発生しました'); return; }
+    closeEditModal();
+    showToast('お店情報を更新しました');
+    renderStoreHeader();
+  }
 
   // ─── メモ（Supabase版）───
   async function loadMemo() {
