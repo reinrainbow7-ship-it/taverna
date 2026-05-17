@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Taverna — ログイン</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .login-logo {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: .04em;
+      margin-bottom: 6px;
+    }
+    .login-sub {
+      font-size: 13px;
+      color: var(--sub);
+      margin-bottom: 32px;
+    }
+    .login-card .form-group {
+      text-align: left;
+    }
+    .login-card input[type="password"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 15px;
+      outline: none;
+      background: var(--bg);
+      transition: border .15s;
+    }
+    .login-card input[type="password"]:focus {
+      border-color: var(--accent);
+    }
+    .login-btn {
+      width: 100%;
+      margin-top: 20px;
+      padding: 12px;
+      font-size: 15px;
+      justify-content: center;
+    }
+    .login-error {
+      margin-top: 14px;
+      font-size: 13px;
+      color: #c0392b;
+      min-height: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-card">
+  <div class="login-logo">Taverna</div>
+  <div class="login-sub">お気に入りのお店を記録する</div>
+
+  <form id="loginForm" onsubmit="handleLogin(event)">
+    <div class="form-group">
+      <label for="password">パスワード</label>
+      <input type="password" id="password" placeholder="パスワードを入力" required autofocus />
+    </div>
+    <button type="submit" class="btn-primary login-btn" id="loginBtn">ログイン</button>
+    <div class="login-error" id="loginError"></div>
+  </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  // すでにログイン済みならトップへ
+  (async () => {
+    const { data: { session } } = await db.auth.getSession();
+    if (session) location.href = 'index.html';
+  })();
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    const btn = document.getElementById('loginBtn');
+    const errEl = document.getElementById('loginError');
+    const password = document.getElementById('password').value;
+
+    btn.textContent = '確認中…';
+    btn.disabled = true;
+    errEl.textContent = '';
+
+    const error = await login(password);
+
+    if (error) {
+      errEl.textContent = 'パスワードが正しくありません';
+      btn.textContent = 'ログイン';
+      btn.disabled = false;
+    } else {
+      location.href = 'index.html';
+    }
+  }
+</script>
+
+</body>
+</html>
