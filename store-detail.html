@@ -46,12 +46,13 @@
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 14px 16px;
-      display: flex; align-items: center;
+      display: flex; align-items: flex-start;
       justify-content: space-between;
       margin-bottom: 10px;
       box-shadow: var(--shadow);
     }
-    .visit-card-left { display: flex; align-items: center; gap: 16px; }
+    .visit-card-left { display: flex; flex-direction: column; gap: 6px; }
+    .visit-card-top { display: flex; align-items: center; gap: 16px; }
     .visit-date { font-size: 14px; font-weight: 600; color: var(--text); }
     .visit-rating { display: flex; gap: 2px; }
     .star { font-size: 16px; color: #ddd; }
@@ -63,6 +64,12 @@
       transition: color .15s;
     }
     .visit-delete-btn:hover { color: #c0392b; }
+
+    .visit-memo {
+      font-size: 13px; color: var(--sub);
+      margin-top: 6px; line-height: 1.5;
+      white-space: pre-wrap; word-break: break-all;
+    }
 
     .visit-empty {
       text-align: center; padding: 40px 20px;
@@ -240,6 +247,11 @@
           <button type="button" class="star-input" data-value="4" onclick="setRating(4)">☆</button>
           <button type="button" class="star-input" data-value="5" onclick="setRating(5)">☆</button>
         </div>
+      </div>
+
+      <div class="form-group">
+        <label>メモ <span class="opt">任意</span></label>
+        <textarea id="v-memo" rows="3" placeholder="例：混んでたけど料理は最高だった！"></textarea>
       </div>
 
       <div class="form-actions">

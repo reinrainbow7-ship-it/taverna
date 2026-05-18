@@ -32,12 +32,15 @@ async function renderVisitList() {
   el.innerHTML = visits.map(v => `
     <div class="visit-card">
       <div class="visit-card-left">
-        <div class="visit-date">${esc(v.date)}</div>
-        <div class="visit-rating">
-          ${[1,2,3,4,5].map(n =>
-            `<span class="star${n <= v.rating ? ' filled' : ''}">★</span>`
-          ).join('')}
+        <div class="visit-card-top">
+          <div class="visit-date">${esc(v.date)}</div>
+          <div class="visit-rating">
+            ${[1,2,3,4,5].map(n =>
+              `<span class="star${n <= v.rating ? ' filled' : ''}">★</span>`
+            ).join('')}
+          </div>
         </div>
+        ${v.memo ? `<div class="visit-memo">${esc(v.memo)}</div>` : ''}
       </div>
       <button class="visit-delete-btn" onclick="deleteVisit('${v.id}')" title="削除">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -106,6 +109,7 @@ async function handleVisitSubmit(e) {
     store_id: currentStoreId,
     date:     document.getElementById('v-date').value,
     rating:   currentRating,
+    memo:     document.getElementById('v-memo').value.trim() || null,
   });
 
   if (error) { console.error(error); showToast('エラーが発生しました'); return; }
