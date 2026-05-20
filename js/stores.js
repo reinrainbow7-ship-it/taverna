@@ -105,6 +105,10 @@ function applyFiltersAndRender(stores) {
 
   grid.innerHTML = filtered.map(s => `
     <div class="card" onclick="handleCardClick(event, '${s.id}')">
+      ${s.thumbnail_url ? `
+      <div class="card-thumbnail-wrap">
+        <img class="card-thumbnail" src="${esc(s.thumbnail_url)}" alt="${esc(s.name)}" />
+      </div>` : ''}
       <div class="card-header">
         <div class="card-name">${esc(s.name)}</div>
         <button class="card-menu-btn" onclick="openCtxMenu(event, '${s.id}')">

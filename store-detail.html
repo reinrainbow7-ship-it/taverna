@@ -86,6 +86,7 @@
       justify-content: space-between; gap: 12px;
       margin-bottom: 10px;
       box-shadow: var(--shadow);
+      flex-wrap: nowrap;
     }
     .menu-card-main { flex: 1; min-width: 0; }
     .menu-name { font-size: 15px; font-weight: 600; }
@@ -104,6 +105,41 @@
       transition: color .15s; flex-shrink: 0;
     }
     .menu-delete-btn:hover { color: #c0392b; }
+
+    /* ─── メニュー写真 ─── */
+    .menu-photo-wrap {
+      width: 90px; height: 90px; flex-shrink: 0;
+      border-radius: 8px; overflow: hidden;
+      border: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .menu-photo {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: opacity .15s;
+    }
+    .menu-photo:hover { opacity: .85; }
+    .btn-set-thumbnail {
+      margin-top: 8px;
+      background: none; border: 1px solid var(--border);
+      border-radius: 6px; padding: 4px 8px;
+      font-size: 12px; color: var(--sub);
+      cursor: pointer; transition: color .15s, border-color .15s;
+    }
+    .btn-set-thumbnail:hover { color: var(--accent); border-color: var(--accent); }
+
+    /* ─── 写真拡大オーバーレイ ─── */
+    .photo-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.85);
+      display: none; align-items: center; justify-content: center;
+      z-index: 200; cursor: pointer;
+    }
+    .photo-overlay.open { display: flex; }
+    .photo-overlay img {
+      max-width: 92vw; max-height: 88vh;
+      border-radius: 10px; object-fit: contain;
+    }
+
     .menu-empty {
       text-align: center; padding: 40px 20px;
       color: var(--sub); font-size: 14px;
@@ -286,6 +322,11 @@
         <textarea id="m-memo" rows="3" placeholder="例：スープが濃くておいしい。辛さ増し無料。"></textarea>
       </div>
 
+      <div class="form-group">
+        <label>写真 <span class="opt">任意</span></label>
+        <input type="file" id="m-photo" accept="image/*" style="font-size:14px;" />
+      </div>
+
       <div class="form-actions">
         <button type="button" class="btn-ghost" onclick="closeMenuModal()">キャンセル</button>
         <button type="submit" class="btn-primary">追加する</button>
@@ -346,6 +387,11 @@
       </div>
     </form>
   </div>
+</div>
+
+<!-- 写真拡大オーバーレイ -->
+<div class="photo-overlay" id="photo-overlay" onclick="closePhotoModal()">
+  <img id="photo-modal-img" src="" alt="写真" />
 </div>
 
 <!-- トースト -->
