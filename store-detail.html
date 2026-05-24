@@ -99,12 +99,40 @@
       margin-top: 6px; line-height: 1.5;
       white-space: pre-wrap; word-break: break-all;
     }
-    .menu-delete-btn {
+    /* ─── メニューカードのボタン群 ─── */
+    .menu-card-btns {
+      display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;
+    }
+    .menu-edit-btn, .menu-delete-btn {
       background: none; border: none; cursor: pointer;
       color: var(--sub); padding: 4px; border-radius: 6px;
-      transition: color .15s; flex-shrink: 0;
+      transition: color .15s;
     }
+    .menu-edit-btn:hover  { color: var(--accent); }
     .menu-delete-btn:hover { color: #c0392b; }
+
+    /* ─── おすすめ度 ─── */
+    .menu-recommend {
+      display: flex; align-items: center; gap: 4px;
+      margin-top: 8px; font-size: 13px; color: var(--sub);
+    }
+    .menu-recommend-label { margin-right: 2px; }
+
+    /* ─── 注文回数 ─── */
+    .menu-order-row {
+      display: flex; align-items: center; gap: 6px;
+      margin-top: 6px; font-size: 13px; color: var(--sub);
+    }
+    .menu-order-label { margin-right: 2px; }
+    .order-count-btn {
+      width: 24px; height: 24px; border-radius: 6px;
+      border: 1px solid var(--border); background: var(--bg);
+      color: var(--text); font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color .15s, color .15s; line-height: 1;
+    }
+    .order-count-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .order-count-num { font-weight: 600; min-width: 28px; text-align: center; color: var(--text); }
 
     /* ─── メニュー写真 ─── */
     .menu-photo-wrap {
@@ -389,6 +417,56 @@
   </div>
 </div>
 
+<!-- メニュー編集モーダル -->
+<div class="overlay" id="menu-edit-overlay" onclick="handleMenuEditOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-title">
+      <span>メニューを編集</span>
+      <button class="modal-close" onclick="closeMenuEditModal()">✕</button>
+    </div>
+
+    <form id="menuEditForm" onsubmit="handleMenuEditSubmit(event)">
+      <div class="form-group">
+        <label>メニュー名 <span class="req">*</span></label>
+        <input type="text" id="me-name" placeholder="例：塩ラーメン" required />
+      </div>
+
+      <div class="form-group">
+        <label>価格 <span class="opt">任意</span></label>
+        <input type="number" id="me-price" placeholder="例：900" min="0" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none;background:var(--surface);transition:border .15s;" />
+      </div>
+
+      <div class="form-group">
+        <label>メモ <span class="opt">任意</span></label>
+        <textarea id="me-memo" rows="3" placeholder="例：スープが濃くておいしい。辛さ増し無料。"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>おすすめ度 <span class="opt">任意</span></label>
+        <div class="star-input-row" id="me-star-row">
+          <button type="button" class="star-input" data-value="1" onclick="setMenuEditRating(1)">☆</button>
+          <button type="button" class="star-input" data-value="2" onclick="setMenuEditRating(2)">☆</button>
+          <button type="button" class="star-input" data-value="3" onclick="setMenuEditRating(3)">☆</button>
+          <button type="button" class="star-input" data-value="4" onclick="setMenuEditRating(4)">☆</button>
+          <button type="button" class="star-input" data-value="5" onclick="setMenuEditRating(5)">☆</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>写真 <span class="opt">任意</span></label>
+        <div id="me-photo-preview" style="margin-bottom:8px;"></div>
+        <input type="file" id="me-photo" accept="image/*" style="font-size:14px;" />
+        <div style="font-size:12px;color:var(--sub);margin-top:4px;">ファイルを選択すると写真が変更されます</div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-ghost" onclick="closeMenuEditModal()">キャンセル</button>
+        <button type="submit" class="btn-primary">更新する</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- 写真拡大オーバーレイ -->
 <div class="photo-overlay" id="photo-overlay" onclick="closePhotoModal()">
   <img id="photo-modal-img" src="" alt="写真" />
@@ -458,7 +536,7 @@
   }
 
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeVisitModal(); closeMenuModal(); closeEditModal(); }
+    if (e.key === 'Escape') { closeVisitModal(); closeMenuModal(); closeMenuEditModal(); closeEditModal(); closePhotoModal(); }
   });
 
   // ─── お店編集モーダル ───
