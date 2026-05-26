@@ -64,6 +64,44 @@
       color: #c0392b;
       min-height: 20px;
     }
+    .login-success {
+      margin-top: 14px;
+      font-size: 13px;
+      color: #27ae60;
+      min-height: 20px;
+    }
+
+    /* ─── パスワード変更セクション ─── */
+    .change-pw-toggle {
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+    .change-pw-toggle-btn {
+      background: none;
+      border: none;
+      color: var(--sub);
+      font-size: 13px;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 0;
+      transition: color .15s;
+    }
+    .change-pw-toggle-btn:hover { color: var(--accent); }
+
+    .change-pw-form {
+      display: none;
+      margin-top: 20px;
+      text-align: left;
+    }
+    .change-pw-form.open { display: block; }
+
+    .change-pw-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--text);
+    }
   </style>
 </head>
 <body>
@@ -72,6 +110,7 @@
   <div class="login-logo">Taverna</div>
   <div class="login-sub">お気に入りのお店を記録する</div>
 
+  <!-- ─── ログインフォーム ─── -->
   <form id="loginForm" onsubmit="handleLogin(event)">
     <div class="form-group">
       <label for="password">パスワード</label>
@@ -80,6 +119,35 @@
     <button type="submit" class="btn-primary login-btn" id="loginBtn">ログイン</button>
     <div class="login-error" id="loginError"></div>
   </form>
+
+  <!-- ─── パスワード変更セクション ─── -->
+  <div class="change-pw-toggle">
+    <button class="change-pw-toggle-btn" onclick="toggleChangePw()">パスワードを変更する</button>
+  </div>
+
+  <div class="change-pw-form" id="changePwForm">
+    <div class="change-pw-title">パスワードを変更する</div>
+
+    <form id="changePwFormEl" onsubmit="handleChangePassword(event)">
+      <div class="form-group">
+        <label for="cp-current">現在のパスワード</label>
+        <input type="password" id="cp-current" placeholder="現在のパスワード" required />
+      </div>
+      <div class="form-group" style="margin-top:12px;">
+        <label for="cp-new">新しいパスワード</label>
+        <input type="password" id="cp-new" placeholder="新しいパスワード（6文字以上）" required minlength="6" />
+      </div>
+      <div class="form-group" style="margin-top:12px;">
+        <label for="cp-confirm">新しいパスワード（確認）</label>
+        <input type="password" id="cp-confirm" placeholder="もう一度入力" required minlength="6" />
+      </div>
+      <button type="submit" class="btn-primary login-btn" id="changePwBtn" style="margin-top:16px;">
+        パスワードを変更する
+      </button>
+      <div class="login-error"   id="changePwError"></div>
+      <div class="login-success" id="changePwSuccess"></div>
+    </form>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -92,14 +160,15 @@
     if (session) location.href = 'index.html';
   })();
 
+  // ─── ログイン ───
   async function handleLogin(e) {
     e.preventDefault();
-    const btn = document.getElementById('loginBtn');
+    const btn   = document.getElementById('loginBtn');
     const errEl = document.getElementById('loginError');
     const password = document.getElementById('password').value;
 
     btn.textContent = '確認中…';
-    btn.disabled = true;
+    btn.disabled    = true;
     errEl.textContent = '';
 
     const error = await login(password);
@@ -107,10 +176,77 @@
     if (error) {
       errEl.textContent = 'パスワードが正しくありません';
       btn.textContent = 'ログイン';
-      btn.disabled = false;
+      btn.disabled    = false;
     } else {
       location.href = 'index.html';
     }
+  }
+
+  // ─── パスワード変更フォームの表示切り替え ───
+  function toggleChangePw() {
+    const form = document.getElementById('changePwForm');
+    form.classList.toggle('open');
+    if (form.classList.contains('open')) {
+      setTimeout(() => document.getElementById('cp-current').focus(), 100);
+    }
+  }
+
+  // ─── パスワード変更 ───
+  async function handleChangePassword(e) {
+    e.preventDefault();
+
+    const btn        = document.getElementById('changePwBtn');
+    const errEl      = document.getElementById('changePwError');
+    const successEl  = document.getElementById('changePwSuccess');
+    const current    = document.getElementById('cp-current').value;
+    const newPw      = document.getElementById('cp-new').value;
+    const confirm    = document.getElementById('cp-confirm').value;
+
+    errEl.textContent     = '';
+    successEl.textContent = '';
+
+    // 新しいパスワードの一致確認
+    if (newPw !== confirm) {
+      errEl.textContent = '新しいパスワードが一致しません';
+      return;
+    }
+
+    btn.textContent = '変更中…';
+    btn.disabled    = true;
+
+    // ① 現在のパスワードで再認証
+    const { error: signInErr } = await db.auth.signInWithPassword({
+      email:    'admin@taverna.app',
+      password: current,
+    });
+
+    if (signInErr) {
+      errEl.textContent = '現在のパスワードが正しくありません';
+      btn.textContent   = 'パスワードを変更する';
+      btn.disabled      = false;
+      return;
+    }
+
+    // ② 新しいパスワードに更新
+    const { error: updateErr } = await db.auth.updateUser({ password: newPw });
+
+    if (updateErr) {
+      errEl.textContent = '変更に失敗しました: ' + updateErr.message;
+      btn.textContent   = 'パスワードを変更する';
+      btn.disabled      = false;
+      return;
+    }
+
+    // ③ 成功 → ログアウトして再ログインを促す
+    successEl.textContent = 'パスワードを変更しました。新しいパスワードでログインしてください。';
+    btn.textContent       = 'パスワードを変更する';
+    btn.disabled          = false;
+
+    document.getElementById('changePwFormEl').reset();
+
+    // セッションをクリアして3秒後にリロード
+    await db.auth.signOut();
+    setTimeout(() => location.reload(), 3000);
   }
 </script>
 
