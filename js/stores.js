@@ -141,6 +141,9 @@ function applyFiltersAndRender(stores) {
           ${esc(s.sns.replace(/^https?:\/\/(www\.)?/, ''))}
         </a>
       </div>` : ''}
+      <button class="card-map-btn" onclick="openStoreMap(event, '${s.id}')">
+        📍 おみせはここ！
+      </button>
     </div>
   `).join('');
 }
@@ -166,7 +169,15 @@ function openModal(id = null) {
 
   renderTagSelector();
   document.getElementById('overlay').classList.add('open');
-  setTimeout(() => document.getElementById('f-name').focus(), 200);
+
+  // ピン設置マップを初期化（表示アニメーション後に描画）
+  setTimeout(() => {
+    document.getElementById('f-name').focus();
+    initPinMap('pin-map', 'pin-coords');
+    if (store?.latitude && store?.longitude) {
+      setPinLocation('pin-map', 'pin-coords', store.latitude, store.longitude);
+    }
+  }, 250);
 }
 
 function closeModal() {
@@ -174,6 +185,7 @@ function closeModal() {
   document.getElementById('storeForm').reset();
   editingId    = null;
   selectedTags = [];
+  destroyPinMap('pin-map');
 }
 
 function handleOverlayClick(e) {
@@ -219,12 +231,16 @@ function addCustomTag() {
 async function handleSubmit(e) {
   e.preventDefault();
 
+  const { lat, lng } = getPinLatLng('pin-map');
+
   const data = {
-    name:    document.getElementById('f-name').value.trim(),
-    area:    document.getElementById('f-area').value.trim(),
-    parking: document.getElementById('f-parking').value,
-    sns:     document.getElementById('f-sns').value.trim(),
-    tags:    [...selectedTags],
+    name:      document.getElementById('f-name').value.trim(),
+    area:      document.getElementById('f-area').value.trim(),
+    parking:   document.getElementById('f-parking').value,
+    sns:       document.getElementById('f-sns').value.trim(),
+    tags:      [...selectedTags],
+    latitude:  lat,
+    longitude: lng,
   };
 
   if (editingId) {
@@ -288,4 +304,11 @@ async function deleteStore() {
 
 function handleCardClick(e, id) {
   location.href = `store-detail.html?id=${id}`;
+}
+
+// ─── カードの「おみせはここ！」ボタン ─
+function openStoreMap(e, id) {
+  e.stopPropagation();
+  const store = _stores.find(s => s.id === id);
+  if (store) openMapModal(store);
 }

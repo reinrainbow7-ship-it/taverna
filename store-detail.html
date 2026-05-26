@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Taverna</title>
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     /* ─── 戻るボタン ─── */
     .back-btn {
@@ -409,6 +410,15 @@
         <div class="tag-selected-list" id="e-tagSelected"></div>
       </div>
 
+      <div class="form-group">
+        <label>場所をピンで設定 <span class="opt">任意</span></label>
+        <div class="map-picker-wrap">
+          <div class="map-picker-hint">地図をクリックするとピンが立ちます</div>
+          <div id="edit-pin-map"></div>
+          <div class="pin-coords" id="edit-pin-coords"></div>
+        </div>
+      </div>
+
       <div class="form-actions">
         <button type="button" class="btn-ghost" onclick="closeEditModal()">キャンセル</button>
         <button type="submit" class="btn-primary">更新する</button>
@@ -472,16 +482,40 @@
   <img id="photo-modal-img" src="" alt="写真" />
 </div>
 
+<!-- 地図表示モーダル -->
+<div class="map-overlay" id="map-overlay" onclick="handleMapOverlayClick(event)">
+  <div class="map-modal">
+    <div class="map-modal-header">
+      <span id="map-modal-title"></span>
+      <button onclick="closeMapModal()">✕</button>
+    </div>
+    <div id="view-map"></div>
+    <div class="map-no-location" id="map-no-location" style="display:none;">
+      <span>🗺️</span>
+      <p>まだ場所が登録されていません。<br>編集からピンを設定してください。</p>
+    </div>
+  </div>
+</div>
+
 <!-- トースト -->
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/supabase.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/map.js"></script>
 <script src="js/visits.js"></script>
 <script src="js/menu.js"></script>
 <script>
+  // ─── 現在のお店データをキャッシュ（地図ボタン用）───
+  let _currentStore = null;
+
+  function openCurrentStoreMap() {
+    if (_currentStore) openMapModal(_currentStore);
+  }
+
   // ─── お店情報を描画（Supabase版）───
   async function renderStoreHeader() {
     const { data: store, error } = await db
@@ -496,18 +530,24 @@
       return;
     }
 
+    _currentStore = store; // キャッシュに保存
     document.title = `${store.name} - Taverna`;
 
     document.getElementById('store-header').innerHTML = `
       <div class="store-header-top">
         <div class="store-title">${esc(store.name)}</div>
-        <button class="btn-primary" onclick="openEditModal()" style="flex-shrink:0;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>
-          編集
-        </button>
+        <div style="display:flex;gap:8px;flex-shrink:0;">
+          <button class="card-map-btn" onclick="openCurrentStoreMap()">
+            📍 おみせはここ！
+          </button>
+          <button class="btn-primary" onclick="openEditModal()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            編集
+          </button>
+        </div>
       </div>
       <div class="store-tags">
         <span class="card-tag">
@@ -536,7 +576,7 @@
   }
 
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeVisitModal(); closeMenuModal(); closeMenuEditModal(); closeEditModal(); closePhotoModal(); }
+    if (e.key === 'Escape') { closeVisitModal(); closeMenuModal(); closeMenuEditModal(); closeEditModal(); closePhotoModal(); closeMapModal(); }
   });
 
   // ─── お店編集モーダル ───
@@ -559,13 +599,22 @@
 
     renderEditTagSelector();
     document.getElementById('edit-overlay').classList.add('open');
-    setTimeout(() => document.getElementById('e-name').focus(), 200);
+
+    // ピン設置マップを初期化（既存の座標があればセット）
+    setTimeout(() => {
+      document.getElementById('e-name').focus();
+      initPinMap('edit-pin-map', 'edit-pin-coords');
+      if (store.latitude && store.longitude) {
+        setPinLocation('edit-pin-map', 'edit-pin-coords', store.latitude, store.longitude);
+      }
+    }, 250);
   }
 
   function closeEditModal() {
     document.getElementById('edit-overlay').classList.remove('open');
     document.getElementById('editStoreForm').reset();
     editSelectedTags = [];
+    destroyPinMap('edit-pin-map');
   }
 
   function handleEditOverlayClick(e) {
@@ -606,12 +655,15 @@
 
   async function handleEditSubmit(e) {
     e.preventDefault();
+    const { lat, lng } = getPinLatLng('edit-pin-map');
     const data = {
-      name:    document.getElementById('e-name').value.trim(),
-      area:    document.getElementById('e-area').value.trim(),
-      parking: document.getElementById('e-parking').value,
-      sns:     document.getElementById('e-sns').value.trim(),
-      tags:    [...editSelectedTags],
+      name:      document.getElementById('e-name').value.trim(),
+      area:      document.getElementById('e-area').value.trim(),
+      parking:   document.getElementById('e-parking').value,
+      sns:       document.getElementById('e-sns').value.trim(),
+      tags:      [...editSelectedTags],
+      latitude:  lat,
+      longitude: lng,
     };
     const { error } = await db.from('stores').update(data).eq('id', currentStoreId);
     if (error) { showToast('エラーが発生しました'); return; }

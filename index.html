@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Taverna</title>
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
 
@@ -89,6 +90,15 @@
         <div class="tag-selected-list" id="tagSelected"></div>
       </div>
 
+      <div class="form-group">
+        <label>場所をピンで設定 <span class="opt">任意</span></label>
+        <div class="map-picker-wrap">
+          <div class="map-picker-hint">地図をクリックするとピンが立ちます</div>
+          <div id="pin-map"></div>
+          <div class="pin-coords" id="pin-coords"></div>
+        </div>
+      </div>
+
       <div class="form-actions">
         <button type="button" class="btn-ghost" onclick="closeModal()">キャンセル</button>
         <button type="submit" class="btn-primary" id="submitBtn">登録する</button>
@@ -116,14 +126,31 @@
   </div>
 </div>
 
+<!-- 地図表示モーダル -->
+<div class="map-overlay" id="map-overlay" onclick="handleMapOverlayClick(event)">
+  <div class="map-modal">
+    <div class="map-modal-header">
+      <span id="map-modal-title"></span>
+      <button onclick="closeMapModal()">✕</button>
+    </div>
+    <div id="view-map"></div>
+    <div class="map-no-location" id="map-no-location" style="display:none;">
+      <span>🗺️</span>
+      <p>まだ場所が登録されていません。<br>お店を編集してピンを設定してください。</p>
+    </div>
+  </div>
+</div>
+
 <!-- トースト通知 -->
 <div class="toast" id="toast"></div>
 
 <!-- スクリプト（依存順に読み込む） -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/supabase.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/map.js"></script>
 <script src="js/stores.js"></script>
 <script>
   // ─── 初期化 ───
@@ -134,7 +161,7 @@
     if (!document.getElementById('ctxMenu').contains(e.target)) closeCtxMenu();
   });
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeModal(); closeCtxMenu(); }
+    if (e.key === 'Escape') { closeModal(); closeCtxMenu(); closeMapModal(); }
   });
 </script>
 
