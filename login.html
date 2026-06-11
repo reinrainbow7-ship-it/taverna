@@ -71,6 +71,35 @@
       min-height: 20px;
     }
 
+    /* ─── デモログインセクション ─── */
+    .demo-section {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+    .demo-btn {
+      width: 100%;
+      padding: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      background: transparent;
+      color: var(--accent);
+      border: 1.5px solid var(--accent);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .demo-btn:hover {
+      background: var(--accent);
+      color: #fff;
+    }
+    .demo-note {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--sub);
+      line-height: 1.6;
+    }
+
     /* ─── パスワード変更セクション ─── */
     .change-pw-toggle {
       margin-top: 28px;
@@ -120,13 +149,24 @@
     <div class="login-error" id="loginError"></div>
   </form>
 
+  <!-- ─── デモログイン ─── -->
+  <div class="demo-section">
+    <button type="button" class="demo-btn" id="demoBtn" onclick="handleDemoLogin()">
+      🍽️ お試しデモで使ってみる
+    </button>
+    <div class="demo-note">
+      パスワード不要で全機能を試せます。<br>
+      デモのデータは共有サンドボックスです（管理者のデータとは分離されています）。
+    </div>
+  </div>
+
   <!-- ─── パスワード変更セクション ─── -->
   <div class="change-pw-toggle">
-    <button class="change-pw-toggle-btn" onclick="toggleChangePw()">パスワードを変更する</button>
+    <button class="change-pw-toggle-btn" onclick="toggleChangePw()">管理者パスワードを変更する</button>
   </div>
 
   <div class="change-pw-form" id="changePwForm">
-    <div class="change-pw-title">パスワードを変更する</div>
+    <div class="change-pw-title">管理者パスワードを変更する</div>
 
     <form id="changePwFormEl" onsubmit="handleChangePassword(event)">
       <div class="form-group">
@@ -182,6 +222,26 @@
     }
   }
 
+  // ─── デモログイン ───
+  async function handleDemoLogin() {
+    const btn   = document.getElementById('demoBtn');
+    const errEl = document.getElementById('loginError');
+
+    btn.textContent = '準備中…';
+    btn.disabled    = true;
+    errEl.textContent = '';
+
+    const error = await loginAsDemo();
+
+    if (error) {
+      errEl.textContent = 'デモの開始に失敗しました。時間をおいて再度お試しください。';
+      btn.textContent = '🍽️ お試しデモで使ってみる';
+      btn.disabled    = false;
+    } else {
+      location.href = 'index.html';
+    }
+  }
+
   // ─── パスワード変更フォームの表示切り替え ───
   function toggleChangePw() {
     const form = document.getElementById('changePwForm');
@@ -216,7 +276,7 @@
 
     // ① 現在のパスワードで再認証
     const { error: signInErr } = await db.auth.signInWithPassword({
-      email:    'admin@taverna.app',
+      email:    ADMIN_EMAIL,
       password: current,
     });
 

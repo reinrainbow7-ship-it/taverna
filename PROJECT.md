@@ -52,6 +52,7 @@ taverna/
 | カラム | 型 | 説明 |
 |---|---|---|
 | id | text | 主キー（genId で生成） |
+| user_id | uuid | 所有ユーザー（default auth.uid()・RLSで分離） |
 | name | text | 店名 |
 | area | text | 場所・エリア |
 | parking | text | 駐車場（あり / なし / 近隣にあり） |
@@ -67,6 +68,7 @@ taverna/
 | カラム | 型 | 説明 |
 |---|---|---|
 | id | text | 主キー |
+| user_id | uuid | 所有ユーザー（default auth.uid()・RLSで分離） |
 | store_id | text | お店 ID（外部キー） |
 | date | date | 来店日 |
 | rating | integer | 星評価（1〜5） |
@@ -77,6 +79,7 @@ taverna/
 | カラム | 型 | 説明 |
 |---|---|---|
 | id | text | 主キー |
+| user_id | uuid | 所有ユーザー（default auth.uid()・RLSで分離） |
 | store_id | text | お店 ID（外部キー） |
 | name | text | メニュー名 |
 | price | integer | 価格（任意） |
@@ -95,7 +98,7 @@ taverna/
 | フロントエンド | HTML / CSS / 素の JavaScript（フレームワークなし） |
 | データベース | Supabase（PostgreSQL・東京リージョン・RLS無効） |
 | ストレージ | Supabase Storage（`taverna-photos` バケット・メニュー写真） |
-| 認証 | Supabase Auth（メール + パスワード・固定アカウント） |
+| 認証 | Supabase Auth（管理者 + デモの2アカウント・RLSでデータ分離） |
 | 地図 | Leaflet.js + OpenStreetMap（APIキー不要・無料） |
 | ホスティング | Vercel（GitHub 連携・自動デプロイ） |
 | バージョン管理 | Git + GitHub |
@@ -132,13 +135,14 @@ taverna/
 
 ### 認証・インフラ
 - [x] パスワード認証（Supabase Auth）
+- [x] デモアカウント（ワンクリックログイン・「お試しモード」バッジ・RLSで管理者データと分離）
+- [x] RLS有効化（user_id 列 + 自分の行のみアクセス可・セットアップ手順は DEMO_SETUP.md）
 - [x] Vercel デプロイ（公開URL）
 
 ---
 
 ## 未実装・今後の候補
 
-- [ ] **Supabase Auth + RLS** — 複数ユーザー対応・データの分離
 - [ ] **PWA化** — スマホのホーム画面に追加、オフライン対応
 - [ ] **お店の評価集計** — 訪問ログの平均評価をカードに表示
 - [ ] **エクスポート機能** — データをCSVやPDFで出力
@@ -149,6 +153,7 @@ taverna/
 
 | 日付 | 内容 |
 |---|---|
+| 2026-06-11 | デモアカウントを追加（demo@taverna.app・RLSによるデータ分離・DEMO_SETUP.md） |
 | 2026-05-26 | 地図機能を追加（Leaflet + OpenStreetMap・ピン設置・地図表示） |
 | 2026-05-24 | メニューに編集機能・おすすめ度・注文回数を追加 |
 | 2026-05-20 | メニューに写真アップロード・サムネイル設定機能を追加 |

@@ -2,26 +2,70 @@
    auth.js — 認証ヘルパー
 ════════════════════════════════ */
 
-// Supabase Auth に登録する固定メールアドレス（変更不要）
-const AUTH_EMAIL = 'admin@taverna.app';
+// Supabase Auth に登録するアカウント
+const ADMIN_EMAIL = 'admin@taverna.app';  // 管理者（自分用）
+const DEMO_EMAIL  = 'demo@taverna.app';   // お試しデモ用（データはRLSで分離）
+
+// デモアカウントのパスワード。
+// ソースに書いても問題ない（デモは誰でも使ってよい前提。データはRLSで管理者と分離される）
+const DEMO_PASSWORD = 'taverna-demo-2026';
+
+// ログイン中ユーザーのメールアドレス（checkAuth 後に入る）
+let currentUserEmail = null;
 
 /**
- * ログイン状態を確認し、未ログインならログイン画面へ
+ * ログイン状態を確認し、未ログインならログイン画面へ。
+ * デモアカウントならヘッダーにバッジを表示する。
  */
 async function checkAuth() {
   const { data: { session } } = await db.auth.getSession();
   if (!session) {
     location.href = 'login.html';
+    return;
+  }
+  currentUserEmail = session.user.email;
+  markDemoMode();
+}
+
+/**
+ * デモアカウントでログイン中か
+ */
+function isDemo() {
+  return currentUserEmail === DEMO_EMAIL;
+}
+
+/**
+ * デモ中ならヘッダーに「お試しモード」バッジを付ける
+ */
+function markDemoMode() {
+  if (!isDemo()) return;
+  const logo = document.querySelector('header .logo');
+  if (logo && !logo.querySelector('.demo-badge')) {
+    const badge = document.createElement('span');
+    badge.className = 'demo-badge';
+    badge.textContent = 'お試しモード';
+    logo.appendChild(badge);
   }
 }
 
 /**
- * パスワードでログイン
+ * 管理者としてパスワードでログイン
  */
 async function login(password) {
   const { error } = await db.auth.signInWithPassword({
-    email: AUTH_EMAIL,
+    email: ADMIN_EMAIL,
     password: password,
+  });
+  return error;
+}
+
+/**
+ * デモアカウントでログイン（ワンクリック）
+ */
+async function loginAsDemo() {
+  const { error } = await db.auth.signInWithPassword({
+    email: DEMO_EMAIL,
+    password: DEMO_PASSWORD,
   });
   return error;
 }
