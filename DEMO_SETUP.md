@@ -102,6 +102,25 @@ from pg_policies
 where tablename in ('stores', 'visits', 'menu_items');
 ```
 
+> **重要:** "own rows only" 以外のポリシーが出てきたら分離が効きません。
+> ポリシーは複数あると OR で効くため、「authenticated なら全行OK」のような
+> 緩いポリシーが残っていると、デモから管理者のデータが見えてしまいます。
+> その場合は以下で全ポリシーを消してから、上の③をもう一度実行してください:
+>
+> ```sql
+> do $$
+> declare p record;
+> begin
+>   for p in
+>     select schemaname, tablename, policyname
+>     from pg_policies
+>     where tablename in ('stores', 'visits', 'menu_items')
+>   loop
+>     execute format('drop policy %I on %I.%I', p.policyname, p.schemaname, p.tablename);
+>   end loop;
+> end $$;
+> ```
+
 これで未ログイン（anon key のみ）ではデータに一切アクセスできなくなり、
 ログイン済みでも自分の行しか読み書きできなくなります。
 
