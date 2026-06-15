@@ -154,6 +154,7 @@ let editingId    = null;
 let selectedTags = [];
 
 function openModal(id = null) {
+  if (isDemo()) return;
   editingId = id;
   const store = id ? _stores.find(s => s.id === id) : null;
 
@@ -230,6 +231,7 @@ function addCustomTag() {
 
 async function handleSubmit(e) {
   e.preventDefault();
+  if (blockIfDemo()) return;
 
   const { lat, lng } = getPinLatLng('pin-map');
 
@@ -288,6 +290,7 @@ function editStore() {
 }
 
 async function deleteStore() {
+  if (blockIfDemo()) return;
   if (!ctxTargetId) return;
   const store = _stores.find(s => s.id === ctxTargetId);
   if (!store) return;

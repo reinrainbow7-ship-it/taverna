@@ -53,6 +53,7 @@ async function renderVisitList() {
 }
 
 async function deleteVisit(id) {
+  if (blockIfDemo()) return;
   if (!confirm('この訪問記録を削除しますか？')) return;
   const { error } = await db.from('visits').delete().eq('id', id);
   if (error) { console.error(error); showToast('エラーが発生しました'); return; }
@@ -65,6 +66,7 @@ async function deleteVisit(id) {
 let currentRating = 0;
 
 function openVisitModal() {
+  if (isDemo()) return;
   currentRating = 0;
   document.getElementById('v-date').value = new Date().toISOString().slice(0, 10);
   updateStarUI(0);
@@ -98,6 +100,7 @@ function updateStarUI(value) {
 
 async function handleVisitSubmit(e) {
   e.preventDefault();
+  if (blockIfDemo()) return;
 
   if (currentRating === 0) {
     alert('評価を選択してください');

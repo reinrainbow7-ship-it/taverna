@@ -150,11 +150,71 @@ create policy "authenticated delete" on storage.objects
 
 ---
 
-## ⑤ 動作確認
+## ⑤ デモを「管理者データの閲覧専用」にする（SQL Editor）
 
-1. ログイン画面 → 「🍽️ お試しデモで使ってみる」→ 空の状態で始まり、ヘッダーに「お試しモード」バッジが出る
-2. デモでお店を1件登録 → ログアウト → 管理者でログイン → デモのお店が**見えない**ことを確認
-3. 管理者の既存データが今まで通り全部見えることを確認
+デモログイン時に、管理者の記録を**閲覧だけ**できるようにします。
+③の `"own rows only"` ポリシー（自分の行のみ）に加えて、
+**SELECT 専用**のポリシーをデモ向けに足します。INSERT/UPDATE/DELETE は
+追加しないので、デモは管理者データを読めても書き換えられません。
+（フロント側でも追加・編集・削除ボタンは非表示にしてあります）
+
+まず管理者の user_id を調べてメモします:
+
+```sql
+select id, email from auth.users where email = 'admin@taverna.app';
+```
+
+次に、上で出た `id` を下の `'ここに管理者のUUID'` 3か所に貼り替えて実行します:
+
+```sql
+-- ─── stores ───
+drop policy if exists "demo reads admin" on stores;
+create policy "demo reads admin" on stores
+  for select to authenticated
+  using (
+    (auth.jwt() ->> 'email') = 'demo@taverna.app'
+    and user_id = 'ここに管理者のUUID'
+  );
+
+-- ─── visits ───
+drop policy if exists "demo reads admin" on visits;
+create policy "demo reads admin" on visits
+  for select to authenticated
+  using (
+    (auth.jwt() ->> 'email') = 'demo@taverna.app'
+    and user_id = 'ここに管理者のUUID'
+  );
+
+-- ─── menu_items ───
+drop policy if exists "demo reads admin" on menu_items;
+create policy "demo reads admin" on menu_items
+  for select to authenticated
+  using (
+    (auth.jwt() ->> 'email') = 'demo@taverna.app'
+    and user_id = 'ここに管理者のUUID'
+  );
+```
+
+> **なぜ安全か:** このポリシーは `for select`（読み取り）専用かつ
+> 「ログイン中のメールが demo、かつ行が管理者のもの」のときだけ許可します。
+> 書き込み系のポリシーは増やしていないので、デモから管理者データへの
+> 追加・更新・削除はすべて RLS で拒否されます。
+> 管理者側は `"own rows only"` のままなので、デモのデータが混ざることもありません。
+>
+> ③の注意書きにある通り「余計なポリシーがあると分離が漏れる」のが原則ですが、
+> この `"demo reads admin"` は *意図的な例外*（デモ→管理者の閲覧のみ）です。
+
+写真は `taverna-photos` バケットが public なら公開URLで今まで通り表示されます
+（④の閲覧ポリシーは不要）。
+
+---
+
+## ⑥ 動作確認
+
+1. ログイン画面 → 「🍽️ お試しデモで使ってみる」→ **管理者の記録が一覧に表示**され、ヘッダーに「お試しモード」バッジが出る
+2. デモ中は「お店を追加」「編集」「削除」「訪問を記録」「メニューを追加」などのボタンが**表示されない**ことを確認
+3. （任意）デモのコンソールから書き込みを試しても RLS で拒否されることを確認
+4. ログアウト → 管理者でログイン → 今まで通り全機能が使えることを確認
 
 ---
 

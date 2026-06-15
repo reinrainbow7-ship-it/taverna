@@ -96,7 +96,7 @@ taverna/
 | 分類 | 内容 |
 |---|---|
 | フロントエンド | HTML / CSS / 素の JavaScript（フレームワークなし） |
-| データベース | Supabase（PostgreSQL・東京リージョン・RLS無効） |
+| データベース | Supabase（PostgreSQL・東京リージョン・RLS有効） |
 | ストレージ | Supabase Storage（`taverna-photos` バケット・メニュー写真） |
 | 認証 | Supabase Auth（管理者 + デモの2アカウント・RLSでデータ分離） |
 | 地図 | Leaflet.js + OpenStreetMap（APIキー不要・無料） |
@@ -135,7 +135,8 @@ taverna/
 
 ### 認証・インフラ
 - [x] パスワード認証（Supabase Auth）
-- [x] デモアカウント（ワンクリックログイン・「お試しモード」バッジ・RLSで管理者データと分離）
+- [x] デモアカウント（ワンクリックログイン・「お試しモード」バッジ）
+  - 管理者の記録を**閲覧専用**で表示（RLSのSELECT専用ポリシー + フロントで追加/編集/削除ボタンを非表示）
 - [x] RLS有効化（user_id 列 + 自分の行のみアクセス可・セットアップ手順は DEMO_SETUP.md）
 - [x] Vercel デプロイ（公開URL）
 
@@ -153,6 +154,7 @@ taverna/
 
 | 日付 | 内容 |
 |---|---|
+| 2026-06-13 | デモを「管理者データの閲覧専用」に変更（RLSのSELECT専用ポリシー + 書き込みUI非表示） |
 | 2026-06-11 | デモアカウントを追加（demo@taverna.app・RLSによるデータ分離・DEMO_SETUP.md） |
 | 2026-05-26 | 地図機能を追加（Leaflet + OpenStreetMap・ピン設置・地図表示） |
 | 2026-05-24 | メニューに編集機能・おすすめ度・注文回数を追加 |

@@ -39,6 +39,10 @@ function isDemo() {
  */
 function markDemoMode() {
   if (!isDemo()) return;
+
+  // body に印を付ける（CSS で追加・編集・削除ボタンを隠す）
+  document.body.classList.add('demo-mode');
+
   const logo = document.querySelector('header .logo');
   if (logo && !logo.querySelector('.demo-badge')) {
     const badge = document.createElement('span');
@@ -46,6 +50,25 @@ function markDemoMode() {
     badge.textContent = 'お試しモード';
     logo.appendChild(badge);
   }
+
+  // メモ欄（詳細ページ）は閲覧専用にする
+  const memo = document.getElementById('store-memo');
+  if (memo) {
+    memo.readOnly = true;
+    memo.placeholder = 'お試しモードではメモは編集できません';
+  }
+}
+
+/**
+ * デモ中なら書き込み操作をブロックする。
+ * ブロックした場合は true を返す（呼び出し側で return する用）。
+ */
+function blockIfDemo() {
+  if (isDemo()) {
+    showToast('お試しモードでは変更できません');
+    return true;
+  }
+  return false;
 }
 
 /**

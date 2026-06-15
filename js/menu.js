@@ -74,6 +74,7 @@ async function renderMenuList() {
 }
 
 async function deleteMenuItem(id) {
+  if (blockIfDemo()) return;
   if (!confirm('このメニューを削除しますか？')) return;
   const { error } = await db.from('menu_items').delete().eq('id', id);
   if (error) { console.error(error); showToast('エラーが発生しました'); return; }
@@ -84,6 +85,7 @@ async function deleteMenuItem(id) {
 // ─── 注文回数更新 ─────────────────
 
 async function updateOrderCount(id, currentCount, delta) {
+  if (blockIfDemo()) return;
   const newCount = Math.max(0, currentCount + delta);
   const { error } = await db
     .from('menu_items')
@@ -96,6 +98,7 @@ async function updateOrderCount(id, currentCount, delta) {
 // ─── サムネイル設定 ───────────────
 
 async function setThumbnail(photoUrl) {
+  if (blockIfDemo()) return;
   const { error } = await db
     .from('stores')
     .update({ thumbnail_url: photoUrl })
@@ -118,6 +121,7 @@ function closePhotoModal() {
 // ─── 追加モーダル ─────────────────
 
 function openMenuModal() {
+  if (isDemo()) return;
   document.getElementById('menu-overlay').classList.add('open');
   setTimeout(() => document.getElementById('m-name').focus(), 200);
 }
@@ -137,6 +141,7 @@ let editingMenuId  = null;
 let editMenuRating = 0;
 
 async function openMenuEditModal(id) {
+  if (isDemo()) return;
   const { data: item, error } = await db
     .from('menu_items')
     .select('*')
@@ -189,6 +194,7 @@ function updateMenuEditStarUI(value) {
 
 async function handleMenuEditSubmit(e) {
   e.preventDefault();
+  if (blockIfDemo()) return;
 
   const priceVal = document.getElementById('me-price').value;
   const file     = document.getElementById('me-photo').files[0];
@@ -235,6 +241,7 @@ async function handleMenuEditSubmit(e) {
 
 async function handleMenuSubmit(e) {
   e.preventDefault();
+  if (blockIfDemo()) return;
 
   const menuId   = genId();
   const priceVal = document.getElementById('m-price').value;

@@ -478,3 +478,19 @@ select:focus, textarea:focus { border-color: var(--accent); }
   transition: transform .3s cubic-bezier(.34,1.56,.64,1);
 }
 .toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ─── お試しモード（閲覧専用）─── */
+/* デモログイン中は追加・編集・削除系のボタンを隠す。
+   データの読み取り専用化は Supabase の RLS で担保している（DEMO_SETUP.md ⑤）。 */
+body.demo-mode .toolbar .btn-primary,        /* お店を追加 */
+body.demo-mode .empty .btn-primary,          /* 最初のお店を追加する */
+body.demo-mode .card-menu-btn,               /* カードの ⋮（編集・削除）*/
+body.demo-mode .section-title .btn-primary,  /* 訪問を記録する / メニューを追加 */
+body.demo-mode .store-header-top .btn-primary, /* お店を編集 */
+body.demo-mode .memo-save-row,               /* メモの保存 */
+body.demo-mode .visit-delete-btn,            /* 訪問の削除 */
+body.demo-mode .menu-card-btns,              /* メニューの編集・削除 */
+body.demo-mode .order-count-btn,             /* 注文回数の ＋／－ */
+body.demo-mode .btn-set-thumbnail {          /* サムネイルに設定 */
+  display: none !important;
+}

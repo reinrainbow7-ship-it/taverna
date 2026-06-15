@@ -584,6 +584,7 @@
   let editSelectedTags = [];
 
   async function openEditModal() {
+    if (isDemo()) return;
     const { data: store, error } = await db
       .from('stores')
       .select('*')
@@ -655,6 +656,7 @@
 
   async function handleEditSubmit(e) {
     e.preventDefault();
+    if (blockIfDemo()) return;
     const { lat, lng } = getPinLatLng('edit-pin-map');
     const data = {
       name:      document.getElementById('e-name').value.trim(),
@@ -685,6 +687,7 @@
   }
 
   async function saveMemo() {
+    if (blockIfDemo()) return;
     const memo = document.getElementById('store-memo').value;
     const { error } = await db
       .from('stores')
