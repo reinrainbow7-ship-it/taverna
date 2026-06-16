@@ -2,6 +2,16 @@
    map.js — Leaflet 地図機能（表示・ピン設置）
 ════════════════════════════════ */
 
+// ─── 函館近郊（道南エリア）に表示範囲を限定する設定 ──
+// この範囲外へはスクロールできず、初期表示も函館中心になる。
+// エリアを広げたい/狭めたいときは下の数値を調整する。
+const DONAN_CENTER   = [41.7687, 140.7291];        // 函館駅周辺
+const DONAN_BOUNDS   = L.latLngBounds(
+  [41.20, 139.70],   // 南西端（おおよそ松前・江差の南西）
+  [42.40, 141.55]    // 北東端（おおよそ長万部・室蘭の手前）
+);
+const DONAN_MIN_ZOOM = 9;   // これ以上は引いて表示できない（道南全体が収まる程度）
+
 // ─── 地図表示モーダル ─────────────
 
 let _viewMap    = null;
@@ -22,7 +32,11 @@ function openMapModal(store) {
 
   setTimeout(() => {
     if (!_viewMap) {
-      _viewMap = L.map('view-map').setView([lat, lng], 16);
+      _viewMap = L.map('view-map', {
+        maxBounds: DONAN_BOUNDS,
+        maxBoundsViscosity: 1.0,
+        minZoom: DONAN_MIN_ZOOM,
+      }).setView([lat, lng], 16);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       }).addTo(_viewMap);
@@ -64,7 +78,11 @@ function initPinMap(mapId, coordsId) {
 
   const state = { lat: null, lng: null, marker: null };
 
-  const map = L.map(mapId).setView([36.5, 137.0], 5); // 初期表示: 日本全体
+  const map = L.map(mapId, {
+    maxBounds: DONAN_BOUNDS,        // この範囲外へはスクロールさせない
+    maxBoundsViscosity: 1.0,        // 端で弾力的に押し戻す
+    minZoom: DONAN_MIN_ZOOM,        // 道南より広域には引けない
+  }).setView(DONAN_CENTER, 12);     // 初期表示: 函館中心
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   }).addTo(map);
