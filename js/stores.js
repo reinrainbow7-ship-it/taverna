@@ -160,7 +160,7 @@ function applyFiltersAndRender(stores) {
           </svg>
           ${esc(s.area)}
         </span>
-        ${s.parking ? `<span class="card-tag">🅿 ${esc(s.parking)}</span>` : ''}
+        ${s.parking ? `<span class="card-tag">🅿 ${esc(s.parking)}${s.parking_capacity ? '・約' + esc(String(s.parking_capacity)) + '台' : ''}</span>` : ''}
       </div>
       ${(s.tags || []).length > 0 ? `
       <div class="store-tags">
@@ -206,6 +206,7 @@ function openModal(id = null) {
 
   renderTagSelector();
   initSeatingEditor('f', store);
+  initParkingEditor('f', store);
   document.getElementById('overlay').classList.add('open');
 
   // ピン設置マップを初期化（表示アニメーション後に描画）
@@ -281,6 +282,7 @@ async function handleSubmit(e) {
     latitude:  lat,
     longitude: lng,
     ...getSeatingValues('f'),
+    ...getParkingValues('f'),
   };
 
   if (editingId) {

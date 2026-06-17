@@ -560,6 +560,46 @@ body.admin-mode .admin-only { display: inline-flex !important; }
 /* カード上の要点表示 */
 .seat-card-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 
+/* ─── 駐車場：車サイズ評価の入力UI ─── */
+.car-rating-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.car-rating-row { display: flex; align-items: center; gap: 10px; }
+.car-rating-label {
+  font-size: 13px; color: var(--text); min-width: 84px; flex-shrink: 0;
+}
+.car-rating-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.car-rating-btn {
+  padding: 6px 11px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--bg);
+  color: var(--text); font-size: 13px; cursor: pointer;
+  transition: all .15s;
+}
+.car-rating-btn:hover { border-color: var(--sub); }
+.car-rating-btn.pk-1.selected { border-color: #A32D2D; background: #A32D2D; color: #fff; }
+.car-rating-btn.pk-2.selected { border-color: #854F0B; background: #854F0B; color: #fff; }
+.car-rating-btn.pk-3.selected { border-color: #0F6E56; background: #0F6E56; color: #fff; }
+
+/* ─── 駐車場：表示バッジ（詳細ページ）─── */
+.park-section { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.park-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.park-cap {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 12px; font-weight: 600;
+  padding: 3px 9px; border-radius: 999px;
+  background: var(--tag-bg); color: var(--sub); border: 1px solid var(--border);
+}
+.park-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 12px; font-weight: 600;
+  padding: 3px 9px; border-radius: 999px;
+}
+.park-badge.pk-1 { background: #fbeae8; color: #A32D2D; border: 1px solid #f0c2bb; }
+.park-badge.pk-2 { background: #fdf0e3; color: #854F0B; border: 1px solid #f5d6ab; }
+.park-badge.pk-3 { background: #e8f6ee; color: #0F6E56; border: 1px solid #b7e0c6; }
+.park-note {
+  font-size: 13px; color: var(--sub); line-height: 1.5;
+  white-space: pre-wrap; word-break: break-all;
+}
+
 /* ─── 条件フィルター（席・喫煙）─── */
 .condition-filter-bar {
   display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;

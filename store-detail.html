@@ -385,12 +385,27 @@
         </div>
         <div class="form-group">
           <label>駐車場</label>
-          <select id="e-parking">
+          <select id="e-parking" onchange="onParkingChange('e')">
             <option value="">未設定</option>
             <option value="あり">あり</option>
             <option value="なし">なし</option>
             <option value="近隣にあり">近隣にあり</option>
           </select>
+        </div>
+      </div>
+
+      <div class="parking-detail" id="e-parking-detail">
+        <div class="form-group">
+          <label>車サイズ別の駐めやすさ <span class="opt">任意</span></label>
+          <div class="car-rating-list" id="e-car-ratings"></div>
+        </div>
+        <div class="form-group">
+          <label>駐車可能台数 <span class="opt">任意</span></label>
+          <input type="number" id="e-parking-capacity" min="0" placeholder="例：5" />
+        </div>
+        <div class="form-group">
+          <label>駐車場メモ <span class="opt">任意</span></label>
+          <input type="text" id="e-parking-note" placeholder="例：店裏に5台・冬は除雪が遅い" />
         </div>
       </div>
 
@@ -522,6 +537,7 @@
 <script src="js/auth.js"></script>
 <script src="js/map.js"></script>
 <script src="js/seating.js"></script>
+<script src="js/parking.js"></script>
 <script src="js/visits.js"></script>
 <script src="js/menu.js"></script>
 <script>
@@ -585,6 +601,7 @@
         ${store.tags.map(t => `<span class="store-tag-chip">${esc(t)}</span>`).join('')}
       </div>` : ''}
       ${renderSeatingBadges(store, 'detail')}
+      ${renderParkingDetail(store)}
     `;
   }
 
@@ -617,6 +634,7 @@
 
     renderEditTagSelector();
     initSeatingEditor('e', store);
+    initParkingEditor('e', store);
     document.getElementById('edit-overlay').classList.add('open');
 
     // ピン設置マップを初期化（既存の座標があればセット）
@@ -685,6 +703,7 @@
       latitude:  lat,
       longitude: lng,
       ...getSeatingValues('e'),
+      ...getParkingValues('e'),
     };
     const { error } = await db.from('stores').update(data).eq('id', currentStoreId);
     if (error) { showToast('エラーが発生しました'); return; }

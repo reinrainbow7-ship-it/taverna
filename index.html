@@ -76,12 +76,27 @@
         </div>
         <div class="form-group">
           <label>駐車場</label>
-          <select id="f-parking">
+          <select id="f-parking" onchange="onParkingChange('f')">
             <option value="">未設定</option>
             <option value="あり">あり</option>
             <option value="なし">なし</option>
             <option value="近隣にあり">近隣にあり</option>
           </select>
+        </div>
+      </div>
+
+      <div class="parking-detail" id="f-parking-detail">
+        <div class="form-group">
+          <label>車サイズ別の駐めやすさ <span class="opt">任意</span></label>
+          <div class="car-rating-list" id="f-car-ratings"></div>
+        </div>
+        <div class="form-group">
+          <label>駐車可能台数 <span class="opt">任意</span></label>
+          <input type="number" id="f-parking-capacity" min="0" placeholder="例：5" />
+        </div>
+        <div class="form-group">
+          <label>駐車場メモ <span class="opt">任意</span></label>
+          <input type="text" id="f-parking-note" placeholder="例：店裏に5台・冬は除雪が遅い" />
         </div>
       </div>
 
@@ -215,6 +230,7 @@
 <script src="js/auth.js"></script>
 <script src="js/map.js"></script>
 <script src="js/seating.js"></script>
+<script src="js/parking.js"></script>
 <script src="js/stores.js"></script>
 <script src="js/bulk.js"></script>
 <script>
