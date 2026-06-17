@@ -134,6 +134,11 @@
       <div class="form-group">
         <label>場所をピンで設定 <span class="opt">任意</span></label>
         <div class="map-picker-wrap">
+          <div class="pin-mode-bar" id="pin-map-mode" style="display:none;">
+            <button type="button" class="pin-mode-btn active" id="pin-map-mode-store" onclick="setPinMode('pin-map','store')">📍 店舗を置く</button>
+            <button type="button" class="pin-mode-btn" id="pin-map-mode-parking" onclick="setPinMode('pin-map','parking')">🅿 駐車場を置く</button>
+            <button type="button" class="pin-clear-btn" id="pin-map-clear" onclick="clearParkingPin('pin-map')">駐車場ピンを消す</button>
+          </div>
           <div class="map-picker-hint">地図をクリックするとピンが立ちます</div>
           <div id="pin-map"></div>
           <div class="pin-coords" id="pin-coords"></div>

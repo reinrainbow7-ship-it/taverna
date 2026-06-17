@@ -216,6 +216,11 @@ function openModal(id = null) {
     if (store?.latitude && store?.longitude) {
       setPinLocation('pin-map', 'pin-coords', store.latitude, store.longitude);
     }
+    // 駐車場ピン（あり/近隣にあり のときだけ設置可）
+    setPinParkingEnabled('pin-map', ['あり', '近隣にあり'].includes(document.getElementById('f-parking').value));
+    if (store?.parking_lat && store?.parking_lng) {
+      setParkingPin('pin-map', store.parking_lat, store.parking_lng);
+    }
   }, 250);
 }
 
@@ -284,6 +289,10 @@ async function handleSubmit(e) {
     ...getSeatingValues('f'),
     ...getParkingValues('f'),
   };
+
+  const parkPin = getParkingLatLng('pin-map');
+  data.parking_lat = parkPin.lat;
+  data.parking_lng = parkPin.lng;
 
   if (editingId) {
     // 既存お店を更新

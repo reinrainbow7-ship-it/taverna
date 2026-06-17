@@ -560,6 +560,33 @@ body.admin-mode .admin-only { display: inline-flex !important; }
 /* カード上の要点表示 */
 .seat-card-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 
+/* ─── 駐車場：地図のピン切り替えUI ─── */
+.pin-divicon { background: none; border: none; }
+.pin-mode-bar {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 8px; background: var(--tag-bg);
+  border-bottom: 1px solid var(--border);
+}
+.pin-mode-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 10px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--sub); font-size: 12px; cursor: pointer;
+  transition: all .15s;
+}
+.pin-mode-btn:hover { border-color: var(--accent); color: var(--accent); }
+.pin-mode-btn.active {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+}
+.pin-clear-btn {
+  margin-left: auto;
+  padding: 5px 10px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--sub); font-size: 12px; cursor: pointer;
+  transition: all .15s;
+}
+.pin-clear-btn:hover { border-color: #c0392b; color: #c0392b; }
+
 /* ─── 駐車場：車サイズ評価の入力UI ─── */
 .car-rating-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
 .car-rating-row { display: flex; align-items: center; gap: 10px; }

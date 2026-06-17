@@ -85,6 +85,12 @@ function updateParkingVisibility(prefix) {
 /** select の onchange から呼ばれる */
 function onParkingChange(prefix) {
   updateParkingVisibility(prefix);
+  // 地図側の「駐車場ピン」設置可否も連動させる（map.js）
+  if (typeof setPinParkingEnabled === 'function') {
+    const sel   = document.getElementById(`${prefix}-parking`);
+    const mapId = prefix === 'e' ? 'edit-pin-map' : 'pin-map';
+    setPinParkingEnabled(mapId, !!(sel && _PARKING_ACTIVE.includes(sel.value)));
+  }
 }
 
 /**

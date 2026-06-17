@@ -443,6 +443,11 @@
       <div class="form-group">
         <label>場所をピンで設定 <span class="opt">任意</span></label>
         <div class="map-picker-wrap">
+          <div class="pin-mode-bar" id="edit-pin-map-mode" style="display:none;">
+            <button type="button" class="pin-mode-btn active" id="edit-pin-map-mode-store" onclick="setPinMode('edit-pin-map','store')">📍 店舗を置く</button>
+            <button type="button" class="pin-mode-btn" id="edit-pin-map-mode-parking" onclick="setPinMode('edit-pin-map','parking')">🅿 駐車場を置く</button>
+            <button type="button" class="pin-clear-btn" id="edit-pin-map-clear" onclick="clearParkingPin('edit-pin-map')">駐車場ピンを消す</button>
+          </div>
           <div class="map-picker-hint">地図をクリックするとピンが立ちます</div>
           <div id="edit-pin-map"></div>
           <div class="pin-coords" id="edit-pin-coords"></div>
@@ -644,6 +649,11 @@
       if (store.latitude && store.longitude) {
         setPinLocation('edit-pin-map', 'edit-pin-coords', store.latitude, store.longitude);
       }
+      // 駐車場ピン（あり/近隣にあり のときだけ設置可）
+      setPinParkingEnabled('edit-pin-map', ['あり', '近隣にあり'].includes(document.getElementById('e-parking').value));
+      if (store.parking_lat && store.parking_lng) {
+        setParkingPin('edit-pin-map', store.parking_lat, store.parking_lng);
+      }
     }, 250);
   }
 
@@ -705,6 +715,9 @@
       ...getSeatingValues('e'),
       ...getParkingValues('e'),
     };
+    const ePark = getParkingLatLng('edit-pin-map');
+    data.parking_lat = ePark.lat;
+    data.parking_lng = ePark.lng;
     const { error } = await db.from('stores').update(data).eq('id', currentStoreId);
     if (error) { showToast('エラーが発生しました'); return; }
     closeEditModal();

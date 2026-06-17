@@ -1,34 +1,54 @@
 /* ════════════════════════════════
    map.js — Leaflet 地図機能（表示・ピン設置）
+   店舗ピン（赤）と駐車場ピン（青）の2種類を扱う。
+   ピン設置マップは「店舗を置く / 駐車場を置く」モードを切り替えて使う。
 ════════════════════════════════ */
 
 // ─── 函館近郊（道南エリア）に表示範囲を限定する設定 ──
-// この範囲外へはスクロールできず、初期表示も函館中心になる。
-// エリアを広げたい/狭めたいときは下の数値を調整する。
 const DONAN_CENTER   = [41.7687, 140.7291];        // 函館駅周辺
 const DONAN_BOUNDS   = L.latLngBounds(
   [41.20, 139.70],   // 南西端（おおよそ松前・江差の南西）
   [42.40, 141.55]    // 北東端（おおよそ長万部・室蘭の手前）
 );
-const DONAN_MIN_ZOOM = 9;   // これ以上は引いて表示できない（道南全体が収まる程度）
+const DONAN_MIN_ZOOM = 9;
 
-// ─── 地図表示モーダル ─────────────
+// ─── ピンの色アイコン（divIcon でSVGを自作・外部画像なし）──
+const STORE_COLOR   = '#E24B4A';  // 店舗ピン: 赤
+const PARKING_COLOR = '#378ADD';  // 駐車場ピン: 青
 
-let _viewMap    = null;
-let _viewMarker = null;
+function _pinIcon(color) {
+  return L.divIcon({
+    className: 'pin-divicon',
+    html: `<svg width="28" height="40" viewBox="0 0 28 40" xmlns="http://www.w3.org/2000/svg">
+      <path d="M14 0C6.27 0 0 6.27 0 14c0 9.5 14 26 14 26s14-16.5 14-26C28 6.27 21.73 0 14 0z" fill="${color}"/>
+      <circle cx="14" cy="14" r="5.5" fill="#fff"/>
+    </svg>`,
+    iconSize:   [28, 40],
+    iconAnchor: [14, 40],
+    popupAnchor:[0, -36],
+  });
+}
+
+const _tileLayer = () => L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+});
+
+// ─── 地図表示モーダル（詳細ページ）─────────────
+
+let _viewMap     = null;
+let _viewMarkers = [];
 
 function openMapModal(store) {
   document.getElementById('map-modal-title').textContent = store.name;
   document.getElementById('map-overlay').classList.add('open');
 
-  const hasLocation = store.latitude && store.longitude;
-  document.getElementById('view-map').style.display        = hasLocation ? 'block' : 'none';
-  document.getElementById('map-no-location').style.display = hasLocation ? 'none'  : 'flex';
+  const hasStore   = store.latitude     && store.longitude;
+  const hasParking = store.parking_lat  && store.parking_lng;
+  const hasAny     = hasStore || hasParking;
 
-  if (!hasLocation) return;
-
-  const lat = parseFloat(store.latitude);
-  const lng = parseFloat(store.longitude);
+  document.getElementById('view-map').style.display        = hasAny ? 'block' : 'none';
+  document.getElementById('map-no-location').style.display = hasAny ? 'none'  : 'flex';
+  if (!hasAny) return;
 
   setTimeout(() => {
     if (!_viewMap) {
@@ -36,18 +56,43 @@ function openMapModal(store) {
         maxBounds: DONAN_BOUNDS,
         maxBoundsViscosity: 1.0,
         minZoom: DONAN_MIN_ZOOM,
-      }).setView([lat, lng], 16);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      }).addTo(_viewMap);
-    } else {
-      _viewMap.setView([lat, lng], 16);
-      if (_viewMarker) { _viewMarker.remove(); _viewMarker = null; }
+      });
+      _tileLayer().addTo(_viewMap);
     }
-    _viewMarker = L.marker([lat, lng])
-      .addTo(_viewMap)
-      .bindPopup(`<strong>${store.name}</strong>${store.area ? '<br>' + store.area : ''}`)
-      .openPopup();
+
+    // 既存マーカーを消す
+    _viewMarkers.forEach(m => m.remove());
+    _viewMarkers = [];
+
+    const pts = [];
+
+    if (hasStore) {
+      const lat = parseFloat(store.latitude);
+      const lng = parseFloat(store.longitude);
+      const m = L.marker([lat, lng], { icon: _pinIcon(STORE_COLOR) })
+        .addTo(_viewMap)
+        .bindPopup(`<strong>${esc(store.name)}</strong>${store.area ? '<br>' + esc(store.area) : ''}`);
+      _viewMarkers.push(m);
+      pts.push([lat, lng]);
+    }
+
+    if (hasParking) {
+      const lat = parseFloat(store.parking_lat);
+      const lng = parseFloat(store.parking_lng);
+      const note = store.parking_note ? '<br>' + esc(store.parking_note) : '';
+      const m = L.marker([lat, lng], { icon: _pinIcon(PARKING_COLOR) })
+        .addTo(_viewMap)
+        .bindPopup(`<strong>🅿 駐車場</strong>${note}`);
+      _viewMarkers.push(m);
+      pts.push([lat, lng]);
+    }
+
+    if (pts.length === 1) {
+      _viewMap.setView(pts[0], 16);
+    } else {
+      _viewMap.fitBounds(pts, { padding: [40, 40], maxZoom: 17 });
+    }
+    if (hasStore) _viewMarkers[0].openPopup();
     _viewMap.invalidateSize();
   }, 100);
 }
@@ -70,74 +115,122 @@ const _pinMaps = {};
  * @param {string} coordsId 座標を表示する要素の id
  */
 function initPinMap(mapId, coordsId) {
-  // 既存マップを破棄してから作り直す
   if (_pinMaps[mapId]) {
     _pinMaps[mapId].map.remove();
     delete _pinMaps[mapId];
   }
 
-  const state = { lat: null, lng: null, marker: null };
-
   const map = L.map(mapId, {
-    maxBounds: DONAN_BOUNDS,        // この範囲外へはスクロールさせない
-    maxBoundsViscosity: 1.0,        // 端で弾力的に押し戻す
-    minZoom: DONAN_MIN_ZOOM,        // 道南より広域には引けない
-  }).setView(DONAN_CENTER, 12);     // 初期表示: 函館中心
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-  }).addTo(map);
+    maxBounds: DONAN_BOUNDS,
+    maxBoundsViscosity: 1.0,
+    minZoom: DONAN_MIN_ZOOM,
+  }).setView(DONAN_CENTER, 12);
+  _tileLayer().addTo(map);
+
+  const entry = {
+    map, coordsId,
+    mode: 'store',            // 'store' | 'parking'
+    parkingEnabled: false,    // 駐車場が「あり/近隣にあり」のときだけ true
+    store:   { lat: null, lng: null, marker: null },
+    parking: { lat: null, lng: null, marker: null },
+  };
 
   map.on('click', e => {
-    state.lat = e.latlng.lat;
-    state.lng = e.latlng.lng;
-    if (state.marker) {
-      state.marker.setLatLng(e.latlng);
-    } else {
-      state.marker = L.marker(e.latlng).addTo(map);
-    }
-    _updatePinCoords(coordsId, state.lat, state.lng);
+    const kind = (entry.mode === 'parking' && entry.parkingEnabled) ? 'parking' : 'store';
+    _setPinMarker(mapId, kind, e.latlng.lat, e.latlng.lng);
+    _renderPinModeUI(mapId);
+    _updatePinCoords(mapId);
   });
 
-  _pinMaps[mapId] = { map, state };
-  _updatePinCoords(coordsId, null, null);
+  _pinMaps[mapId] = entry;
+  _renderPinModeUI(mapId);
+  _updatePinCoords(mapId);
 }
 
-/**
- * 既存の座標にピンをセットして地図を移動する
- * @param {string} mapId
- * @param {string} coordsId
- * @param {number} lat
- * @param {number} lng
- */
-function setPinLocation(mapId, coordsId, lat, lng) {
-  if (!_pinMaps[mapId] || lat == null || lng == null) return;
-  const { map, state } = _pinMaps[mapId];
-  state.lat = lat;
-  state.lng = lng;
-  map.setView([lat, lng], 15);
-  if (state.marker) {
-    state.marker.setLatLng([lat, lng]);
+function _setPinMarker(mapId, kind, lat, lng) {
+  const entry = _pinMaps[mapId];
+  if (!entry) return;
+  const s = entry[kind];
+  s.lat = lat;
+  s.lng = lng;
+  if (s.marker) {
+    s.marker.setLatLng([lat, lng]);
   } else {
-    state.marker = L.marker([lat, lng]).addTo(map);
+    const color = kind === 'parking' ? PARKING_COLOR : STORE_COLOR;
+    s.marker = L.marker([lat, lng], { icon: _pinIcon(color) })
+      .addTo(entry.map)
+      .bindPopup(kind === 'parking' ? '🅿 駐車場' : '📍 店舗');
   }
-  _updatePinCoords(coordsId, lat, lng);
 }
 
-/**
- * 現在のピン座標を取得する
- * @param {string} mapId
- * @returns {{ lat: number|null, lng: number|null }}
- */
+/** 店舗ピンの位置を設定して地図を移動する（既存座標の復元用）*/
+function setPinLocation(mapId, coordsId, lat, lng) {
+  const entry = _pinMaps[mapId];
+  if (!entry || lat == null || lng == null) return;
+  _setPinMarker(mapId, 'store', lat, lng);
+  entry.map.setView([lat, lng], 15);
+  _updatePinCoords(mapId);
+}
+
+/** 駐車場ピンの位置を設定する（既存座標の復元用）*/
+function setParkingPin(mapId, lat, lng) {
+  const entry = _pinMaps[mapId];
+  if (!entry || lat == null || lng == null) return;
+  _setPinMarker(mapId, 'parking', lat, lng);
+  _renderPinModeUI(mapId);
+  _updatePinCoords(mapId);
+}
+
+/** 駐車場ピンを置けるかどうかを切り替える（select の「あり/近隣にあり」連動）*/
+function setPinParkingEnabled(mapId, enabled) {
+  const entry = _pinMaps[mapId];
+  if (!entry) return;
+  entry.parkingEnabled = !!enabled;
+  if (!enabled) {
+    _clearParking(mapId);     // 「なし」になったら駐車場ピンは消す
+    entry.mode = 'store';
+  }
+  _renderPinModeUI(mapId);
+  _updatePinCoords(mapId);
+}
+
+/** モード切り替え（ボタンから呼ばれる）*/
+function setPinMode(mapId, mode) {
+  const entry = _pinMaps[mapId];
+  if (!entry) return;
+  if (mode === 'parking' && !entry.parkingEnabled) return;
+  entry.mode = mode;
+  _renderPinModeUI(mapId);
+}
+
+/** 駐車場ピンを消す（ボタンから呼ばれる）*/
+function clearParkingPin(mapId) {
+  _clearParking(mapId);
+  _renderPinModeUI(mapId);
+  _updatePinCoords(mapId);
+}
+
+function _clearParking(mapId) {
+  const entry = _pinMaps[mapId];
+  if (!entry) return;
+  if (entry.parking.marker) entry.parking.marker.remove();
+  entry.parking = { lat: null, lng: null, marker: null };
+}
+
+/** 店舗ピンの座標を取得する */
 function getPinLatLng(mapId) {
-  if (!_pinMaps[mapId]) return { lat: null, lng: null };
-  const { lat, lng } = _pinMaps[mapId].state;
-  return { lat, lng };
+  const entry = _pinMaps[mapId];
+  if (!entry) return { lat: null, lng: null };
+  return { lat: entry.store.lat, lng: entry.store.lng };
 }
 
-/**
- * ピン設置マップを破棄する（モーダルを閉じるとき）
- * @param {string} mapId
- */
+/** 駐車場ピンの座標を取得する（駐車場が無効なら null）*/
+function getParkingLatLng(mapId) {
+  const entry = _pinMaps[mapId];
+  if (!entry || !entry.parkingEnabled) return { lat: null, lng: null };
+  return { lat: entry.parking.lat, lng: entry.parking.lng };
+}
+
 function destroyPinMap(mapId) {
   if (_pinMaps[mapId]) {
     _pinMaps[mapId].map.remove();
@@ -145,10 +238,37 @@ function destroyPinMap(mapId) {
   }
 }
 
-function _updatePinCoords(coordsId, lat, lng) {
-  const el = document.getElementById(coordsId);
+// モード切り替えバー・クリアボタンの表示を更新する。
+// ボタンの id は「<mapId>-mode」「<mapId>-mode-store」「<mapId>-mode-parking」「<mapId>-clear」の規約。
+function _renderPinModeUI(mapId) {
+  const entry = _pinMaps[mapId];
+  if (!entry) return;
+
+  if (!entry.parkingEnabled && entry.mode === 'parking') entry.mode = 'store';
+
+  const bar      = document.getElementById(`${mapId}-mode`);
+  const storeBtn = document.getElementById(`${mapId}-mode-store`);
+  const parkBtn  = document.getElementById(`${mapId}-mode-parking`);
+  const clearBtn = document.getElementById(`${mapId}-clear`);
+
+  // 駐車場が無効なときはモードバー自体を隠す（クリックは常に店舗ピン）
+  if (bar) bar.style.display = entry.parkingEnabled ? '' : 'none';
+  if (storeBtn) storeBtn.classList.toggle('active', entry.mode === 'store');
+  if (parkBtn)  parkBtn.classList.toggle('active', entry.mode === 'parking');
+  if (clearBtn) clearBtn.style.display = entry.parking.marker ? '' : 'none';
+}
+
+function _updatePinCoords(mapId) {
+  const entry = _pinMaps[mapId];
+  if (!entry) return;
+  const el = document.getElementById(entry.coordsId);
   if (!el) return;
-  el.textContent = (lat != null && lng != null)
-    ? `📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}`
-    : '地図をクリックして場所を設定してください';
+
+  const fmt = p => (p.lat != null && p.lng != null)
+    ? `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`
+    : '未設定';
+
+  let html = `📍 店舗：${fmt(entry.store)}`;
+  if (entry.parkingEnabled) html += `<br>🅿 駐車場：${fmt(entry.parking)}`;
+  el.innerHTML = html;
 }
