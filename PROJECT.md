@@ -62,6 +62,13 @@ taverna/
 | thumbnail_url | text | サムネイル画像URL（任意） |
 | latitude | float8 | 緯度（地図ピン用・任意） |
 | longitude | float8 | 経度（地図ピン用・任意） |
+| parking_lat | float8 | 駐車場の緯度（フェーズ2・任意） |
+| parking_lng | float8 | 駐車場の経度（フェーズ2・任意） |
+| parking_note | text | 駐車場メモ（台数・穴場・冬注意など・任意） |
+| parking_capacity | integer | 駐車可能台数（任意） |
+| parking_kei | integer | 軽の駐めやすさ（1=厳しい/2=なんとか/3=余裕/null=未評価） |
+| parking_futsuu | integer | 普通車の駐めやすさ（同上） |
+| parking_family | integer | 大きめ/RVの駐めやすさ（同上） |
 | seat_counter | boolean | カウンター席あり（true=あり / null=未確認） |
 | seat_table | boolean | テーブル席あり（同上） |
 | seat_zashiki | boolean | 座敷あり（同上） |
@@ -118,6 +125,7 @@ taverna/
 - [x] お店の登録・編集・削除（Supabase連携）
 - [x] お店の一括登録（管理者専用・CSVテキスト貼り付け・プレビュー付き）
 - [x] 座席・喫煙情報（席タイプ4種・喫煙3択・席メモ・条件フィルター・ひとり◎/子連れ◎推定）
+- [x] 駐車場情報の強化フェーズ1（車サイズ評価・台数・メモ／フェーズ2の地図マークは未実装）
 - [x] カード一覧表示（サムネイル付き）
 - [x] 店名・エリアのリアルタイム検索
 - [x] タグフィルター（プリセット8種 + カスタムタグ）
@@ -162,6 +170,7 @@ taverna/
 
 | 日付 | 内容 |
 |---|---|
+| 2026-06-18 | 駐車場情報の強化フェーズ1（車サイズ評価/台数/メモ・js/parking.js／地図マークは未） |
 | 2026-06-17 | 座席・喫煙情報機能を追加（席タイプ/喫煙/席メモ・条件フィルター・js/seating.js） |
 | 2026-06-17 | お店の一括登録機能を追加（管理者専用・CSV貼り付け・プレビュー・js/bulk.js） |
 | 2026-06-13 | デモを「管理者データの閲覧専用」に変更（RLSのSELECT専用ポリシー + 書き込みUI非表示） |
