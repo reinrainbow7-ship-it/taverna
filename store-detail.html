@@ -411,6 +411,21 @@
       </div>
 
       <div class="form-group">
+        <label>席タイプ <span class="opt">任意・複数選択可</span></label>
+        <div class="seat-type-list" id="e-seat-types"></div>
+      </div>
+
+      <div class="form-group">
+        <label>喫煙 <span class="opt">任意</span></label>
+        <div class="smoke-list" id="e-smoking"></div>
+      </div>
+
+      <div class="form-group">
+        <label>席メモ <span class="opt">任意</span></label>
+        <input type="text" id="e-seat-note" placeholder="例：カウンター4席のみ・少し狭め" />
+      </div>
+
+      <div class="form-group">
         <label>場所をピンで設定 <span class="opt">任意</span></label>
         <div class="map-picker-wrap">
           <div class="map-picker-hint">地図をクリックするとピンが立ちます</div>
@@ -506,6 +521,7 @@
 <script src="js/supabase.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/map.js"></script>
+<script src="js/seating.js"></script>
 <script src="js/visits.js"></script>
 <script src="js/menu.js"></script>
 <script>
@@ -568,6 +584,7 @@
       <div class="store-tags" style="margin-top:12px;">
         ${store.tags.map(t => `<span class="store-tag-chip">${esc(t)}</span>`).join('')}
       </div>` : ''}
+      ${renderSeatingBadges(store, 'detail')}
     `;
   }
 
@@ -599,6 +616,7 @@
     document.getElementById('e-sns').value     = store.sns     || '';
 
     renderEditTagSelector();
+    initSeatingEditor('e', store);
     document.getElementById('edit-overlay').classList.add('open');
 
     // ピン設置マップを初期化（既存の座標があればセット）
@@ -666,6 +684,7 @@
       tags:      [...editSelectedTags],
       latitude:  lat,
       longitude: lng,
+      ...getSeatingValues('e'),
     };
     const { error } = await db.from('stores').update(data).eq('id', currentStoreId);
     if (error) { showToast('エラーが発生しました'); return; }

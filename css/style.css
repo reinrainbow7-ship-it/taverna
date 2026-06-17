@@ -500,3 +500,78 @@ body.demo-mode .btn-set-thumbnail {          /* サムネイルに設定 */
    body.admin-mode は auth.js の markAdminMode() で付与される。 */
 .admin-only { display: none !important; }
 body.admin-mode .admin-only { display: inline-flex !important; }
+
+/* ─── 座席・喫煙：入力UI（編集モーダル内）─── */
+.seat-type-list, .smoke-list {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;
+}
+.seat-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 12px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--bg);
+  color: var(--text); font-size: 13px; cursor: pointer;
+  transition: border-color .15s, background .15s, color .15s;
+}
+.seat-chip .seat-chip-icon { font-size: 15px; }
+.seat-chip:hover { border-color: var(--accent); }
+.seat-chip.selected {
+  border-color: var(--accent); background: var(--accent); color: #fff;
+}
+
+.smoke-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 12px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--bg);
+  color: var(--text); font-size: 13px; cursor: pointer;
+  transition: all .15s;
+}
+.smoke-chip:hover { border-color: var(--sub); }
+.smoke-chip.smk-no.selected  { border-color: #27ae60; background: #27ae60; color: #fff; }
+.smoke-chip.smk-yes.selected { border-color: #c0392b; background: #c0392b; color: #fff; }
+.smoke-chip.smk-sep.selected { border-color: #e67e22; background: #e67e22; color: #fff; }
+
+/* ─── 座席・喫煙：表示バッジ ─── */
+.seat-section { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+.seat-hints, .seat-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.seat-hint {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 12px; font-weight: 600;
+  padding: 3px 9px; border-radius: 999px;
+  background: #fff3e0; color: #d97a1a; border: 1px solid #f3d3a8;
+}
+.seat-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 12px; padding: 3px 9px; border-radius: 999px;
+  background: var(--tag-bg); color: var(--sub); border: 1px solid var(--border);
+}
+.smoke-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 12px; font-weight: 600;
+  padding: 3px 9px; border-radius: 999px;
+}
+.smoke-badge.smk-no  { background: #e8f6ee; color: #1e8449; border: 1px solid #b7e0c6; }
+.smoke-badge.smk-yes { background: #fbeae8; color: #b03a2e; border: 1px solid #f0c2bb; }
+.smoke-badge.smk-sep { background: #fdf0e3; color: #ca6f1e; border: 1px solid #f5d6ab; }
+.seat-note {
+  font-size: 13px; color: var(--sub); line-height: 1.5;
+  white-space: pre-wrap; word-break: break-all;
+}
+/* カード上の要点表示 */
+.seat-card-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+/* ─── 条件フィルター（席・喫煙）─── */
+.condition-filter-bar {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
+}
+.condition-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 6px 12px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--sub); font-size: 13px; cursor: pointer;
+  transition: all .15s;
+}
+.condition-chip:hover { border-color: var(--accent); color: var(--accent); }
+.condition-chip.active {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+}

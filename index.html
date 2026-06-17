@@ -46,6 +46,9 @@
   <!-- タグフィルターバー -->
   <div class="tag-filter-bar" id="tagFilterBar"></div>
 
+  <!-- 条件フィルター（席・喫煙）-->
+  <div class="condition-filter-bar" id="conditionFilterBar"></div>
+
   <!-- カードグリッド -->
   <div class="grid" id="grid"></div>
 </main>
@@ -96,6 +99,21 @@
           <button type="button" class="btn-tag-add" onclick="addCustomTag()">追加</button>
         </div>
         <div class="tag-selected-list" id="tagSelected"></div>
+      </div>
+
+      <div class="form-group">
+        <label>席タイプ <span class="opt">任意・複数選択可</span></label>
+        <div class="seat-type-list" id="f-seat-types"></div>
+      </div>
+
+      <div class="form-group">
+        <label>喫煙 <span class="opt">任意</span></label>
+        <div class="smoke-list" id="f-smoking"></div>
+      </div>
+
+      <div class="form-group">
+        <label>席メモ <span class="opt">任意</span></label>
+        <input type="text" id="f-seat-note" placeholder="例：カウンター4席のみ・少し狭め" />
       </div>
 
       <div class="form-group">
@@ -196,6 +214,7 @@
 <script src="js/supabase.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/map.js"></script>
+<script src="js/seating.js"></script>
 <script src="js/stores.js"></script>
 <script src="js/bulk.js"></script>
 <script>

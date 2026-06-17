@@ -61,11 +61,39 @@ function renderTagFilters(stores) {
     ).join('');
 }
 
+// ─── 条件フィルター（席・喫煙）─────
+
+const CONDITION_FILTERS = [
+  { key: 'solo',    label: '🙋 ひとりで入れる', test: s => s.seat_counter === true },
+  { key: 'kids',    label: '👨‍👩‍👧 子連れOK',     test: s => s.seat_zashiki === true },
+  { key: 'group',   label: '🍻 大人数向き',     test: s => s.seat_table === true && s.seat_private === true },
+  { key: 'nosmoke', label: '🚭 完全禁煙',       test: s => s.smoking === 'no' },
+];
+
+let activeConditions = [];
+
+function renderConditionFilters() {
+  const bar = document.getElementById('conditionFilterBar');
+  if (!bar) return;
+  bar.innerHTML = CONDITION_FILTERS.map(c =>
+    `<button class="condition-chip${activeConditions.includes(c.key) ? ' active' : ''}" onclick="toggleCondition('${c.key}')">${c.label}</button>`
+  ).join('');
+}
+
+function toggleCondition(key) {
+  activeConditions = activeConditions.includes(key)
+    ? activeConditions.filter(k => k !== key)
+    : [...activeConditions, key];
+  renderConditionFilters();
+  applyFiltersAndRender(_stores);
+}
+
 // ─── カード描画 ───────────────────
 
 async function renderCards() {
   _stores = await loadStores();
   renderTagFilters(_stores);
+  renderConditionFilters();
   applyFiltersAndRender(_stores);
 }
 
@@ -84,19 +112,26 @@ function applyFiltersAndRender(stores) {
       activeTagFilters.every(t => (s.tags || []).includes(t)));
   }
 
+  if (activeConditions.length > 0) {
+    filtered = filtered.filter(s =>
+      activeConditions.every(key => CONDITION_FILTERS.find(c => c.key === key).test(s)));
+  }
+
   document.getElementById('count').textContent = stores.length;
   const grid = document.getElementById('grid');
 
+  const hasFilter = q || activeTagFilters.length > 0 || activeConditions.length > 0;
+
   if (filtered.length === 0) {
-    const msg = activeTagFilters.length > 0
-      ? '選択したタグに一致するお店が見つかりません'
+    const msg = (activeTagFilters.length > 0 || activeConditions.length > 0)
+      ? '選択した条件に一致するお店が見つかりません'
       : q ? `"${q}" に一致するお店が見つかりません`
       : 'まだお店が登録されていません';
     grid.innerHTML = `
       <div class="empty">
         <div class="empty-icon">🍽️</div>
         <p>${msg}</p>
-        ${!q && activeTagFilters.length === 0
+        ${!hasFilter
           ? `<button class="btn-primary" onclick="openModal()" style="margin:0 auto">最初のお店を追加する</button>`
           : ''}
       </div>`;
@@ -141,6 +176,7 @@ function applyFiltersAndRender(stores) {
           ${esc(s.sns.replace(/^https?:\/\/(www\.)?/, ''))}
         </a>
       </div>` : ''}
+      ${renderSeatingBadges(s, 'card')}
       <button class="card-map-btn" onclick="openStoreMap(event, '${s.id}')">
         📍 おみせはここ！
       </button>
@@ -169,6 +205,7 @@ function openModal(id = null) {
   document.getElementById('f-sns').value             = store?.sns     || '';
 
   renderTagSelector();
+  initSeatingEditor('f', store);
   document.getElementById('overlay').classList.add('open');
 
   // ピン設置マップを初期化（表示アニメーション後に描画）
@@ -243,6 +280,7 @@ async function handleSubmit(e) {
     tags:      [...selectedTags],
     latitude:  lat,
     longitude: lng,
+    ...getSeatingValues('f'),
   };
 
   if (editingId) {
