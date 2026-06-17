@@ -494,3 +494,9 @@ body.demo-mode .order-count-btn,             /* 注文回数の ＋／－ */
 body.demo-mode .btn-set-thumbnail {          /* サムネイルに設定 */
   display: none !important;
 }
+
+/* ─── 管理者専用UI ─── */
+/* 既定では隠し、管理者（admin@taverna.app）でログインしたときだけ表示する。
+   body.admin-mode は auth.js の markAdminMode() で付与される。 */
+.admin-only { display: none !important; }
+body.admin-mode .admin-only { display: inline-flex !important; }

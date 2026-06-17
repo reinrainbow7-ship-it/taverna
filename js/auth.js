@@ -25,6 +25,7 @@ async function checkAuth() {
   }
   currentUserEmail = session.user.email;
   markDemoMode();
+  markAdminMode();
 }
 
 /**
@@ -32,6 +33,20 @@ async function checkAuth() {
  */
 function isDemo() {
   return currentUserEmail === DEMO_EMAIL;
+}
+
+/**
+ * 管理者（自分）でログイン中か
+ */
+function isAdmin() {
+  return currentUserEmail === ADMIN_EMAIL;
+}
+
+/**
+ * 管理者なら body に印を付ける（CSS で管理者専用UIを表示する）
+ */
+function markAdminMode() {
+  if (isAdmin()) document.body.classList.add('admin-mode');
 }
 
 /**
