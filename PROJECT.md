@@ -62,6 +62,12 @@ taverna/
 | thumbnail_url | text | サムネイル画像URL（任意） |
 | latitude | float8 | 緯度（地図ピン用・任意） |
 | longitude | float8 | 経度（地図ピン用・任意） |
+| seat_counter | boolean | カウンター席あり（true=あり / null=未確認） |
+| seat_table | boolean | テーブル席あり（同上） |
+| seat_zashiki | boolean | 座敷あり（同上） |
+| seat_private | boolean | 個室あり（同上） |
+| smoking | text | 喫煙（'no'=禁煙 / 'yes'=喫煙可 / 'sep'=分煙 / null=未確認） |
+| seat_note | text | 席に関する自由メモ（任意） |
 | created_at | timestamptz | 登録日時 |
 
 ### visits（訪問ログ）
@@ -111,6 +117,7 @@ taverna/
 ### お店管理
 - [x] お店の登録・編集・削除（Supabase連携）
 - [x] お店の一括登録（管理者専用・CSVテキスト貼り付け・プレビュー付き）
+- [x] 座席・喫煙情報（席タイプ4種・喫煙3択・席メモ・条件フィルター・ひとり◎/子連れ◎推定）
 - [x] カード一覧表示（サムネイル付き）
 - [x] 店名・エリアのリアルタイム検索
 - [x] タグフィルター（プリセット8種 + カスタムタグ）
@@ -155,6 +162,7 @@ taverna/
 
 | 日付 | 内容 |
 |---|---|
+| 2026-06-17 | 座席・喫煙情報機能を追加（席タイプ/喫煙/席メモ・条件フィルター・js/seating.js） |
 | 2026-06-17 | お店の一括登録機能を追加（管理者専用・CSV貼り付け・プレビュー・js/bulk.js） |
 | 2026-06-13 | デモを「管理者データの閲覧専用」に変更（RLSのSELECT専用ポリシー + 書き込みUI非表示） |
 | 2026-06-11 | デモアカウントを追加（demo@taverna.app・RLSによるデータ分離・DEMO_SETUP.md） |
