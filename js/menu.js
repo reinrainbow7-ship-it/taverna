@@ -198,6 +198,14 @@ function handleMenuEditOverlayClick(e) {
   if (e.target === document.getElementById('menu-edit-overlay')) closeMenuEditModal();
 }
 
+/** 編集モーダルから削除する（一覧カードの削除と同じ処理を流用）*/
+async function deleteMenuFromEdit() {
+  const id = editingMenuId;
+  if (!id) return;
+  closeMenuEditModal();
+  await deleteMenuItem(id);   // demoブロック・確認ダイアログ・写真削除は deleteMenuItem 側で実施
+}
+
 function setMenuEditRating(value) {
   editMenuRating = value;
   updateMenuEditStarUI(value);
@@ -229,7 +237,8 @@ async function handleMenuEditSubmit(e) {
   if (file) {
     if (photoUrl) await removeMenuPhoto(photoUrl);  // 旧写真を消す
     const ext      = file.name.split('.').pop();
-    const filePath = `${currentStoreId}/${editingMenuId}.${ext}`;
+    // ファイル名にタイムスタンプを付けてURLを変える（同名上書きだとキャッシュで旧画像が残るため）
+    const filePath = `${currentStoreId}/${editingMenuId}-${Date.now()}.${ext}`;
     const { error: upErr } = await db.storage
       .from('taverna-photos')
       .upload(filePath, file, { upsert: true });
@@ -267,7 +276,7 @@ async function handleMenuSubmit(e) {
 
   if (file) {
     const ext      = file.name.split('.').pop();
-    const filePath = `${currentStoreId}/${menuId}.${ext}`;
+    const filePath = `${currentStoreId}/${menuId}-${Date.now()}.${ext}`;
     const { error: upErr } = await db.storage
       .from('taverna-photos')
       .upload(filePath, file, { upsert: true });
