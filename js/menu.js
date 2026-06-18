@@ -76,10 +76,29 @@ async function renderMenuList() {
 async function deleteMenuItem(id) {
   if (blockIfDemo()) return;
   if (!confirm('このメニューを削除しますか？')) return;
+
+  // 先に Storage 上の写真を削除する（オーファン防止・ベストエフォート）
+  const { data: item } = await db
+    .from('menu_items')
+    .select('photo_url')
+    .eq('id', id)
+    .single();
+  if (item?.photo_url) await removeMenuPhoto(item.photo_url);
+
   const { error } = await db.from('menu_items').delete().eq('id', id);
   if (error) { console.error(error); showToast('エラーが発生しました'); return; }
   renderMenuList();
   showToast('メニューを削除しました');
+}
+
+/** menu の写真URLから Storage 上のファイルを削除する（ベストエフォート）*/
+async function removeMenuPhoto(photoUrl) {
+  try {
+    const path = photoUrl.split('/taverna-photos/')[1];
+    if (path) await db.storage.from('taverna-photos').remove([path]);
+  } catch (e) {
+    console.error('removeMenuPhoto error:', e);
+  }
 }
 
 // ─── 注文回数更新 ─────────────────
@@ -208,10 +227,7 @@ async function handleMenuEditSubmit(e) {
   let photoUrl = current?.photo_url || null;
 
   if (file) {
-    if (photoUrl) {
-      const oldPath = photoUrl.split('/taverna-photos/')[1];
-      if (oldPath) await db.storage.from('taverna-photos').remove([oldPath]);
-    }
+    if (photoUrl) await removeMenuPhoto(photoUrl);  // 旧写真を消す
     const ext      = file.name.split('.').pop();
     const filePath = `${currentStoreId}/${editingMenuId}.${ext}`;
     const { error: upErr } = await db.storage
@@ -224,8 +240,8 @@ async function handleMenuEditSubmit(e) {
 
   const { error } = await db.from('menu_items').update({
     name:             document.getElementById('me-name').value.trim(),
-    price:            priceVal !== '' ? parseInt(priceVal) : null,
-    memo:             document.getElementById('me-memo').value.trim(),
+    price:            priceVal !== '' ? parseInt(priceVal, 10) : null,
+    memo:             document.getElementById('me-memo').value.trim() || null,
     recommend_rating: editMenuRating,
     photo_url:        photoUrl,
   }).eq('id', editingMenuId);
@@ -266,8 +282,8 @@ async function handleMenuSubmit(e) {
     id:        menuId,
     store_id:  currentStoreId,
     name:      document.getElementById('m-name').value.trim(),
-    price:     priceVal !== '' ? parseInt(priceVal) : null,
-    memo:      document.getElementById('m-memo').value.trim(),
+    price:     priceVal !== '' ? parseInt(priceVal, 10) : null,
+    memo:      document.getElementById('m-memo').value.trim() || null,
     photo_url: photoUrl,
   });
 

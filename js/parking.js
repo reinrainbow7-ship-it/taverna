@@ -110,7 +110,7 @@ function getParkingValues(prefix) {
   const st     = _parkStates[prefix] || { ratings: {} };
   const capEl  = document.getElementById(`${prefix}-parking-capacity`);
   const noteEl = document.getElementById(`${prefix}-parking-note`);
-  const capNum = capEl && capEl.value !== '' ? parseInt(capEl.value) : null;
+  const capNum = capEl && capEl.value !== '' ? parseInt(capEl.value, 10) : null;
   const note   = noteEl ? noteEl.value.trim() : '';
 
   return {

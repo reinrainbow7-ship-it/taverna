@@ -174,7 +174,7 @@ async function submitBulk() {
     area:       r.area,
     parking:    r.parking,
     tags:       r.tags,
-    sns:        r.sns || '',
+    sns:        r.sns || null,
     memo:       r.memo || null,
     created_at: new Date().toISOString(),
     // user_id は auth.uid() のデフォルトで自動。緯度経度は後から各店の編集で設定。

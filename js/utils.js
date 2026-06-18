@@ -21,6 +21,16 @@ function esc(s) {
 }
 
 /**
+ * リンク用に安全なURLだけを通す（javascript: などのスキームを弾く）。
+ * 不正なら空文字を返す。href へ入れる前に通すこと。
+ */
+function safeUrl(s) {
+  const url = String(s ?? '').trim();
+  if (!url) return '';
+  return /^https?:\/\//i.test(url) ? url : '';
+}
+
+/**
  * 画面下部にトースト通知を表示する
  */
 let toastTimer;

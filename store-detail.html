@@ -419,8 +419,8 @@
         <div class="tag-preset-list" id="e-tagPresets"></div>
         <div class="tag-custom-input">
           <input type="text" id="e-customTagInput" placeholder="カスタムタグを追加…"
-                 onkeydown="if(event.key==='Enter'){event.preventDefault();addEditCustomTag()}" />
-          <button type="button" class="btn-tag-add" onclick="addEditCustomTag()">追加</button>
+                 onkeydown="if(event.key==='Enter'){event.preventDefault();addTagFromInput('e')}" />
+          <button type="button" class="btn-tag-add" onclick="addTagFromInput('e')">追加</button>
         </div>
         <div class="tag-selected-list" id="e-tagSelected"></div>
       </div>
@@ -543,6 +543,7 @@
 <script src="js/map.js"></script>
 <script src="js/seating.js"></script>
 <script src="js/parking.js"></script>
+<script src="js/tags.js"></script>
 <script src="js/visits.js"></script>
 <script src="js/menu.js"></script>
 <script>
@@ -595,8 +596,8 @@
           ${esc(store.area)}
         </span>
         ${store.parking ? `<span class="card-tag">🅿 ${esc(store.parking)}</span>` : ''}
-        ${store.sns ? `
-          <a href="${esc(store.sns)}" target="_blank" rel="noopener"
+        ${safeUrl(store.sns) ? `
+          <a href="${esc(safeUrl(store.sns))}" target="_blank" rel="noopener"
              style="font-size:12px; color:var(--accent); text-decoration:none;">
             🔗 ${esc(store.sns.replace(/^https?:\/\/(www\.)?/, ''))}
           </a>` : ''}
@@ -618,10 +619,7 @@
     if (e.key === 'Escape') { closeVisitModal(); closeMenuModal(); closeMenuEditModal(); closeEditModal(); closePhotoModal(); closeMapModal(); }
   });
 
-  // ─── お店編集モーダル ───
-  const PRESET_TAGS = ['ラーメン', 'カフェ', '海鮮', '焼肉', 'カレー', '居酒屋', 'スイーツ', 'テイクアウト可'];
-  let editSelectedTags = [];
-
+  // ─── お店編集モーダル（タグUIは tags.js / prefix 'e'）───
   async function openEditModal() {
     if (isDemo()) return;
     const { data: store, error } = await db
@@ -631,13 +629,12 @@
       .single();
     if (error || !store) return;
 
-    editSelectedTags = store.tags ? [...store.tags] : [];
     document.getElementById('e-name').value    = store.name    || '';
     document.getElementById('e-area').value    = store.area    || '';
     document.getElementById('e-parking').value = store.parking || '';
     document.getElementById('e-sns').value     = store.sns     || '';
 
-    renderEditTagSelector();
+    initTagEditor('e', store);
     initSeatingEditor('e', store);
     initParkingEditor('e', store);
     document.getElementById('edit-overlay').classList.add('open');
@@ -660,44 +657,11 @@
   function closeEditModal() {
     document.getElementById('edit-overlay').classList.remove('open');
     document.getElementById('editStoreForm').reset();
-    editSelectedTags = [];
     destroyPinMap('edit-pin-map');
   }
 
   function handleEditOverlayClick(e) {
     if (e.target === document.getElementById('edit-overlay')) closeEditModal();
-  }
-
-  function renderEditTagSelector() {
-    document.getElementById('e-tagPresets').innerHTML = PRESET_TAGS.map((t, i) =>
-      `<button type="button" class="tag-preset-chip${editSelectedTags.includes(t) ? ' selected' : ''}" onclick="toggleEditPresetTag(${i})">${esc(t)}</button>`
-    ).join('');
-
-    document.getElementById('e-tagSelected').innerHTML = editSelectedTags.map((t, i) =>
-      `<span class="tag-selected-chip">${esc(t)}<button type="button" onclick="removeEditSelectedTag(${i})">×</button></span>`
-    ).join('');
-  }
-
-  function toggleEditPresetTag(index) {
-    const tag = PRESET_TAGS[index];
-    editSelectedTags = editSelectedTags.includes(tag)
-      ? editSelectedTags.filter(t => t !== tag)
-      : [...editSelectedTags, tag];
-    renderEditTagSelector();
-  }
-
-  function removeEditSelectedTag(index) {
-    editSelectedTags.splice(index, 1);
-    renderEditTagSelector();
-  }
-
-  function addEditCustomTag() {
-    const input = document.getElementById('e-customTagInput');
-    const tag   = input.value.trim();
-    if (!tag) return;
-    if (!editSelectedTags.includes(tag)) editSelectedTags.push(tag);
-    input.value = '';
-    renderEditTagSelector();
   }
 
   async function handleEditSubmit(e) {
@@ -708,8 +672,8 @@
       name:      document.getElementById('e-name').value.trim(),
       area:      document.getElementById('e-area').value.trim(),
       parking:   document.getElementById('e-parking').value,
-      sns:       document.getElementById('e-sns').value.trim(),
-      tags:      [...editSelectedTags],
+      sns:       document.getElementById('e-sns').value.trim() || null,
+      tags:      getTagValues('e'),
       latitude:  lat,
       longitude: lng,
       ...getSeatingValues('e'),

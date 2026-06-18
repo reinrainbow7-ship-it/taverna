@@ -1,8 +1,7 @@
 /* ════════════════════════════════
    stores.js — お店のデータ管理・表示（Supabase版）
+   タグ選択UIは tags.js（prefix 'f'）に分離。
 ════════════════════════════════ */
-
-const PRESET_TAGS = ['ラーメン', 'カフェ', '海鮮', '焼肉', 'カレー', '居酒屋', 'スイーツ', 'テイクアウト可'];
 
 // ─── キャッシュ ───────────────────
 // Supabase から取得したお店データを一時保存する
@@ -117,10 +116,12 @@ function applyFiltersAndRender(stores) {
       activeConditions.every(key => CONDITION_FILTERS.find(c => c.key === key).test(s)));
   }
 
-  document.getElementById('count').textContent = stores.length;
-  const grid = document.getElementById('grid');
-
   const hasFilter = q || activeTagFilters.length > 0 || activeConditions.length > 0;
+
+  // フィルター中は「全体の件数中 該当件数」を表示する
+  document.getElementById('count').textContent =
+    hasFilter ? `${stores.length}件中 ${filtered.length}` : stores.length;
+  const grid = document.getElementById('grid');
 
   if (filtered.length === 0) {
     const msg = (activeTagFilters.length > 0 || activeConditions.length > 0)
@@ -166,13 +167,13 @@ function applyFiltersAndRender(stores) {
       <div class="store-tags">
         ${s.tags.map(t => `<span class="store-tag-chip">${esc(t)}</span>`).join('')}
       </div>` : ''}
-      ${s.sns ? `
+      ${safeUrl(s.sns) ? `
       <div class="card-sns">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
           <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
         </svg>
-        <a href="${esc(s.sns)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+        <a href="${esc(safeUrl(s.sns))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
           ${esc(s.sns.replace(/^https?:\/\/(www\.)?/, ''))}
         </a>
       </div>` : ''}
@@ -186,15 +187,12 @@ function applyFiltersAndRender(stores) {
 
 // ─── モーダル ─────────────────────
 
-let editingId    = null;
-let selectedTags = [];
+let editingId = null;
 
 function openModal(id = null) {
   if (isDemo()) return;
   editingId = id;
   const store = id ? _stores.find(s => s.id === id) : null;
-
-  selectedTags = store?.tags ? [...store.tags] : [];
 
   document.getElementById('modalTitle').textContent  = id ? 'お店を編集する' : 'お店を登録する';
   document.getElementById('submitBtn').textContent   = id ? '更新する' : '登録する';
@@ -204,7 +202,7 @@ function openModal(id = null) {
   document.getElementById('f-parking').value         = store?.parking || '';
   document.getElementById('f-sns').value             = store?.sns     || '';
 
-  renderTagSelector();
+  initTagEditor('f', store);
   initSeatingEditor('f', store);
   initParkingEditor('f', store);
   document.getElementById('overlay').classList.add('open');
@@ -227,47 +225,12 @@ function openModal(id = null) {
 function closeModal() {
   document.getElementById('overlay').classList.remove('open');
   document.getElementById('storeForm').reset();
-  editingId    = null;
-  selectedTags = [];
+  editingId = null;
   destroyPinMap('pin-map');
 }
 
 function handleOverlayClick(e) {
   if (e.target === document.getElementById('overlay')) closeModal();
-}
-
-// ─── タグセレクター（モーダル内） ─────
-
-function renderTagSelector() {
-  document.getElementById('tagPresets').innerHTML = PRESET_TAGS.map((t, i) =>
-    `<button type="button" class="tag-preset-chip${selectedTags.includes(t) ? ' selected' : ''}" onclick="togglePresetTag(${i})">${esc(t)}</button>`
-  ).join('');
-
-  document.getElementById('tagSelected').innerHTML = selectedTags.map((t, i) =>
-    `<span class="tag-selected-chip">${esc(t)}<button type="button" onclick="removeSelectedTag(${i})">×</button></span>`
-  ).join('');
-}
-
-function togglePresetTag(index) {
-  const tag = PRESET_TAGS[index];
-  selectedTags = selectedTags.includes(tag)
-    ? selectedTags.filter(t => t !== tag)
-    : [...selectedTags, tag];
-  renderTagSelector();
-}
-
-function removeSelectedTag(index) {
-  selectedTags.splice(index, 1);
-  renderTagSelector();
-}
-
-function addCustomTag() {
-  const input = document.getElementById('customTagInput');
-  const tag   = input.value.trim();
-  if (!tag) return;
-  if (!selectedTags.includes(tag)) selectedTags.push(tag);
-  input.value = '';
-  renderTagSelector();
 }
 
 // ─── フォーム送信 ─────────────────
@@ -282,8 +245,8 @@ async function handleSubmit(e) {
     name:      document.getElementById('f-name').value.trim(),
     area:      document.getElementById('f-area').value.trim(),
     parking:   document.getElementById('f-parking').value,
-    sns:       document.getElementById('f-sns').value.trim(),
-    tags:      [...selectedTags],
+    sns:       document.getElementById('f-sns').value.trim() || null,
+    tags:      getTagValues('f'),
     latitude:  lat,
     longitude: lng,
     ...getSeatingValues('f'),
@@ -345,6 +308,10 @@ async function deleteStore() {
   if (!store) return;
   if (!confirm(`「${store.name}」を削除しますか？`)) { closeCtxMenu(); return; }
 
+  // 先に Storage 上のメニュー写真を削除する（オーファン防止）。
+  // 写真は taverna-photos/<store_id>/<menu_id>.<ext> に保存される。
+  await removeStorePhotos(ctxTargetId);
+
   // お店を削除（visits・menu_items は ON DELETE CASCADE で自動削除）
   const { error } = await db.from('stores').delete().eq('id', ctxTargetId);
   if (error) { console.error(error); showToast('エラーが発生しました'); return; }
@@ -352,6 +319,21 @@ async function deleteStore() {
   closeCtxMenu();
   showToast('削除しました');
   renderCards();
+}
+
+/**
+ * 指定お店のフォルダ配下の写真を Storage からまとめて削除する（ベストエフォート）。
+ * 失敗してもお店削除は続行する。
+ */
+async function removeStorePhotos(storeId) {
+  try {
+    const { data: files, error } = await db.storage.from('taverna-photos').list(storeId);
+    if (error || !files || files.length === 0) return;
+    const paths = files.map(f => `${storeId}/${f.name}`);
+    await db.storage.from('taverna-photos').remove(paths);
+  } catch (e) {
+    console.error('removeStorePhotos error:', e);
+  }
 }
 
 function handleCardClick(e, id) {

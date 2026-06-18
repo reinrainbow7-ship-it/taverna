@@ -25,7 +25,7 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
       </svg>
-      <input type="search" id="searchInput" placeholder="店名・エリアで検索…" oninput="renderCards()" />
+      <input type="search" id="searchInput" placeholder="店名・エリアで検索…" oninput="applyFiltersAndRender(_stores)" />
     </div>
     <button class="btn-ghost admin-only" onclick="openBulkModal()" title="スプレッドシートからまとめて登録">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -107,13 +107,13 @@
 
       <div class="form-group">
         <label>タグ <span class="opt">任意</span></label>
-        <div class="tag-preset-list" id="tagPresets"></div>
+        <div class="tag-preset-list" id="f-tagPresets"></div>
         <div class="tag-custom-input">
-          <input type="text" id="customTagInput" placeholder="カスタムタグを追加…"
-                 onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomTag()}" />
-          <button type="button" class="btn-tag-add" onclick="addCustomTag()">追加</button>
+          <input type="text" id="f-customTagInput" placeholder="カスタムタグを追加…"
+                 onkeydown="if(event.key==='Enter'){event.preventDefault();addTagFromInput('f')}" />
+          <button type="button" class="btn-tag-add" onclick="addTagFromInput('f')">追加</button>
         </div>
-        <div class="tag-selected-list" id="tagSelected"></div>
+        <div class="tag-selected-list" id="f-tagSelected"></div>
       </div>
 
       <div class="form-group">
@@ -236,6 +236,7 @@
 <script src="js/map.js"></script>
 <script src="js/seating.js"></script>
 <script src="js/parking.js"></script>
+<script src="js/tags.js"></script>
 <script src="js/stores.js"></script>
 <script src="js/bulk.js"></script>
 <script>

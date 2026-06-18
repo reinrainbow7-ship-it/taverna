@@ -36,10 +36,14 @@ taverna/
 │   └── style.css       # 全ページ共通スタイル
 └── js/
     ├── supabase.js     # Supabase クライアント設定
-    ├── utils.js        # 共通関数（genId / esc / showToast）
+    ├── utils.js        # 共通関数（genId / esc / safeUrl / showToast）
     ├── auth.js         # パスワード認証（checkAuth / login / logout）
     ├── map.js          # 地図機能（Leaflet + OpenStreetMap）
-    ├── stores.js       # お店 CRUD・カード描画・検索・タグ
+    ├── seating.js      # 座席・喫煙情報の入力UI・バッジ（prefix方式）
+    ├── parking.js      # 駐車場詳細（車サイズ評価・台数・メモ）
+    ├── tags.js         # タグ選択UI（登録/編集モーダル共通・prefix方式）
+    ├── stores.js       # お店 CRUD・カード描画・検索・タグフィルター
+    ├── bulk.js         # お店の一括登録（管理者専用・CSV）
     ├── visits.js       # 訪問ログ（日付・星評価・メモ）
     └── menu.js         # メニュー記録（名前・価格・メモ・写真・おすすめ度・注文回数）
 ```
@@ -170,6 +174,7 @@ taverna/
 
 | 日付 | 内容 |
 |---|---|
+| 2026-06-19 | 軽微な修正（機能追加なし）：①検索を毎回DB再取得→キャッシュ再描画に変更 ②SNSリンクに safeUrl() を追加し javascript: 等の不正スキームを遮断 ③検索/フィルター時の件数表示を「N件中 M」に ④タグ選択UIを js/tags.js に共通化（index/詳細の重複実装を解消）⑤空欄の保存値を null に統一（sns/memo）⑥削除・写真差し替え時に Supabase Storage の写真も削除（オーファン解消）⑦parseInt の基数指定 |
 | 2026-06-18 | 駐車場の地図マーク（フェーズ2）を追加（店舗=赤/駐車場=青の2ピン・map.js拡張） |
 | 2026-06-18 | 駐車場情報の強化フェーズ1（車サイズ評価/台数/メモ・js/parking.js） |
 | 2026-06-17 | 座席・喫煙情報機能を追加（席タイプ/喫煙/席メモ・条件フィルター・js/seating.js） |
