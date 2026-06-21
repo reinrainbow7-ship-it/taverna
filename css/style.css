@@ -562,6 +562,27 @@ body.admin-mode .admin-only { display: inline-flex !important; }
 
 /* ─── 駐車場：地図のピン切り替えUI ─── */
 .pin-divicon { background: none; border: none; }
+
+/* 地図の住所検索ボックス */
+.map-search {
+  display: flex; gap: 6px; padding: 8px;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.map-search input {
+  flex: 1; min-width: 0;
+  padding: 7px 10px; border: 1px solid var(--border);
+  border-radius: 6px; font-size: 13px; background: var(--bg);
+  color: var(--text); outline: none; transition: border .15s;
+}
+.map-search input:focus { border-color: var(--accent); }
+.map-search button {
+  flex-shrink: 0;
+  padding: 7px 14px; border-radius: 6px;
+  border: 1px solid var(--accent); background: var(--accent);
+  color: #fff; font-size: 13px; cursor: pointer;
+  transition: opacity .15s;
+}
+.map-search button:hover { opacity: .9; }
 .pin-mode-bar {
   display: flex; flex-wrap: wrap; gap: 6px;
   padding: 8px; background: var(--tag-bg);

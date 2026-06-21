@@ -134,6 +134,11 @@
       <div class="form-group">
         <label>場所をピンで設定 <span class="opt">任意</span></label>
         <div class="map-picker-wrap">
+          <div class="map-search">
+            <input type="text" id="pin-map-search" placeholder="住所・店名で検索（例：函館市本町3-14）"
+                   onkeydown="if(event.key==='Enter'){event.preventDefault();searchPinLocation('pin-map','pin-map-search')}" />
+            <button type="button" onclick="searchPinLocation('pin-map','pin-map-search')">検索</button>
+          </div>
           <div class="pin-mode-bar" id="pin-map-mode" style="display:none;">
             <button type="button" class="pin-mode-btn active" id="pin-map-mode-store" onclick="setPinMode('pin-map','store')">📍 店舗を置く</button>
             <button type="button" class="pin-mode-btn" id="pin-map-mode-parking" onclick="setPinMode('pin-map','parking')">🅿 駐車場を置く</button>
