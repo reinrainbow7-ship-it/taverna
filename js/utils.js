@@ -31,6 +31,18 @@ function safeUrl(s) {
 }
 
 /**
+ * アップロードファイルから安全な拡張子を得る。
+ * 拡張子なし/不正なら MIME タイプから推定し、最後は 'jpg' にフォールバックする。
+ */
+function fileExt(file) {
+  const name = (file && file.name) || '';
+  const m = name.match(/\.([a-zA-Z0-9]+)$/);
+  if (m) return m[1].toLowerCase();
+  const type = ((file && file.type) || '').split('/')[1];
+  return (type || 'jpg').toLowerCase();
+}
+
+/**
  * 画面下部にトースト通知を表示する
  */
 let toastTimer;

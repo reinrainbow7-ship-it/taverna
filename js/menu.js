@@ -236,7 +236,7 @@ async function handleMenuEditSubmit(e) {
 
   if (file) {
     if (photoUrl) await removeMenuPhoto(photoUrl);  // 旧写真を消す
-    const ext      = file.name.split('.').pop();
+    const ext      = fileExt(file);
     // ファイル名にタイムスタンプを付けてURLを変える（同名上書きだとキャッシュで旧画像が残るため）
     const filePath = `${currentStoreId}/${editingMenuId}-${Date.now()}.${ext}`;
     const { error: upErr } = await db.storage
@@ -275,7 +275,7 @@ async function handleMenuSubmit(e) {
   let photoUrl = null;
 
   if (file) {
-    const ext      = file.name.split('.').pop();
+    const ext      = fileExt(file);
     const filePath = `${currentStoreId}/${menuId}-${Date.now()}.${ext}`;
     const { error: upErr } = await db.storage
       .from('taverna-photos')
