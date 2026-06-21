@@ -35,12 +35,12 @@
       </svg>
       一括登録
     </button>
-    <button class="btn-primary" onclick="openModal()">
+    <a class="btn-primary" href="store-edit.html" style="text-decoration:none;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
       </svg>
       お店を追加
-    </button>
+    </a>
   </div>
 
   <!-- タグフィルターバー -->
@@ -52,111 +52,6 @@
   <!-- カードグリッド -->
   <div class="grid" id="grid"></div>
 </main>
-
-<!-- お店 追加/編集モーダル -->
-<div class="overlay" id="overlay" onclick="handleOverlayClick(event)">
-  <div class="modal">
-    <div class="modal-title">
-      <span id="modalTitle">お店を登録する</span>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-
-    <form id="storeForm" onsubmit="handleSubmit(event)">
-      <input type="hidden" id="editId" />
-
-      <div class="form-group">
-        <label>店名 <span class="req">*</span></label>
-        <input type="text" id="f-name" placeholder="例: ビストロ タヴェルナ" required />
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label>場所 <span class="req">*</span></label>
-          <input type="text" id="f-area" placeholder="例: 渋谷" required />
-        </div>
-        <div class="form-group">
-          <label>駐車場</label>
-          <select id="f-parking" onchange="onParkingChange('f')">
-            <option value="">未設定</option>
-            <option value="あり">あり</option>
-            <option value="なし">なし</option>
-            <option value="近隣にあり">近隣にあり</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="parking-detail" id="f-parking-detail">
-        <div class="form-group">
-          <label>車サイズ別の駐めやすさ <span class="opt">任意</span></label>
-          <div class="car-rating-list" id="f-car-ratings"></div>
-        </div>
-        <div class="form-group">
-          <label>駐車可能台数 <span class="opt">任意</span></label>
-          <input type="number" id="f-parking-capacity" min="0" placeholder="例：5" />
-        </div>
-        <div class="form-group">
-          <label>駐車場メモ <span class="opt">任意</span></label>
-          <input type="text" id="f-parking-note" placeholder="例：店裏に5台・冬は除雪が遅い" />
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>公式SNS <span class="opt">任意</span></label>
-        <input type="url" id="f-sns" placeholder="https://instagram.com/…" />
-      </div>
-
-      <div class="form-group">
-        <label>タグ <span class="opt">任意</span></label>
-        <div class="tag-preset-list" id="f-tagPresets"></div>
-        <div class="tag-custom-input">
-          <input type="text" id="f-customTagInput" placeholder="カスタムタグを追加…"
-                 onkeydown="if(event.key==='Enter'){event.preventDefault();addTagFromInput('f')}" />
-          <button type="button" class="btn-tag-add" onclick="addTagFromInput('f')">追加</button>
-        </div>
-        <div class="tag-selected-list" id="f-tagSelected"></div>
-      </div>
-
-      <div class="form-group">
-        <label>席タイプ <span class="opt">任意・複数選択可</span></label>
-        <div class="seat-type-list" id="f-seat-types"></div>
-      </div>
-
-      <div class="form-group">
-        <label>喫煙 <span class="opt">任意</span></label>
-        <div class="smoke-list" id="f-smoking"></div>
-      </div>
-
-      <div class="form-group">
-        <label>席メモ <span class="opt">任意</span></label>
-        <input type="text" id="f-seat-note" placeholder="例：カウンター4席のみ・少し狭め" />
-      </div>
-
-      <div class="form-group">
-        <label>場所をピンで設定 <span class="opt">任意</span></label>
-        <div class="map-picker-wrap">
-          <div class="map-search">
-            <input type="text" id="pin-map-search" placeholder="住所・地名・店名で検索（例：◯◯市◯◯町）"
-                   onkeydown="if(event.key==='Enter'){event.preventDefault();searchPinLocation('pin-map','pin-map-search')}" />
-            <button type="button" onclick="searchPinLocation('pin-map','pin-map-search')">検索</button>
-          </div>
-          <div class="pin-mode-bar" id="pin-map-mode" style="display:none;">
-            <button type="button" class="pin-mode-btn active" id="pin-map-mode-store" onclick="setPinMode('pin-map','store')">📍 店舗を置く</button>
-            <button type="button" class="pin-mode-btn" id="pin-map-mode-parking" onclick="setPinMode('pin-map','parking')">🅿 駐車場を置く</button>
-            <button type="button" class="pin-clear-btn" id="pin-map-clear" onclick="clearParkingPin('pin-map')">駐車場ピンを消す</button>
-          </div>
-          <div class="map-picker-hint">地図をクリックするとピンが立ちます</div>
-          <div id="pin-map"></div>
-          <div class="pin-coords" id="pin-coords"></div>
-        </div>
-      </div>
-
-      <div class="form-actions">
-        <button type="button" class="btn-ghost" onclick="closeModal()">キャンセル</button>
-        <button type="submit" class="btn-primary" id="submitBtn">登録する</button>
-      </div>
-    </form>
-  </div>
-</div>
 
 <!-- コンテキストメニュー -->
 <div class="ctx-menu" id="ctxMenu">
@@ -240,8 +135,6 @@
 <script src="js/auth.js"></script>
 <script src="js/map.js"></script>
 <script src="js/seating.js"></script>
-<script src="js/parking.js"></script>
-<script src="js/tags.js"></script>
 <script src="js/stores.js"></script>
 <script src="js/bulk.js"></script>
 <script>
@@ -253,7 +146,7 @@
     if (!document.getElementById('ctxMenu').contains(e.target)) closeCtxMenu();
   });
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeModal(); closeCtxMenu(); closeMapModal(); closeBulkModal(); }
+    if (e.key === 'Escape') { closeCtxMenu(); closeMapModal(); closeBulkModal(); }
   });
 </script>
 

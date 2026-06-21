@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>お店を登録・編集 - Taverna</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    .edit-page { max-width: 720px; margin: 24px auto; }
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: none; border: none; cursor: pointer;
+      color: var(--sub); font-size: 14px; text-decoration: none;
+      padding: 6px 0; transition: color .15s;
+    }
+    .back-btn:hover { color: var(--accent); }
+    .edit-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin: 16px 0;
+      box-shadow: var(--shadow);
+    }
+    .edit-section-title {
+      font-size: 15px; font-weight: 700;
+      margin-bottom: 16px; color: var(--text);
+    }
+    .edit-actions {
+      display: flex; justify-content: flex-end; gap: 10px;
+      margin: 20px 0 40px;
+    }
+    .star-input-row { display: flex; gap: 8px; margin-top: 4px; }
+    .star-input {
+      font-size: 28px; cursor: pointer;
+      background: none; border: none; color: #ddd; line-height: 1;
+      transition: color .1s, transform .1s; padding: 0;
+    }
+    .star-input.active { color: #f5a623; }
+    .star-input:hover { transform: scale(1.2); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Taverna <span>お気に入りのお店を記録する</span></div>
+  <button class="btn-ghost" onclick="logout()" style="font-size:13px;">ログアウト</button>
+</header>
+
+<main>
+  <div class="edit-page">
+    <a class="back-btn" href="index.html">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      一覧に戻る
+    </a>
+
+    <h1 id="pageTitle" style="font-size:22px;font-weight:700;margin:12px 0 4px;">お店を登録する</h1>
+
+    <form id="storeForm" onsubmit="handleStoreSave(event)">
+
+      <!-- 基本情報 -->
+      <div class="edit-section">
+        <div class="edit-section-title">基本情報</div>
+
+        <div class="form-group">
+          <label>店名 <span class="req">*</span></label>
+          <input type="text" id="f-name" placeholder="例: ビストロ タヴェルナ" required />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>場所 <span class="req">*</span></label>
+            <input type="text" id="f-area" placeholder="例: 函館 五稜郭" required />
+          </div>
+          <div class="form-group">
+            <label>駐車場</label>
+            <select id="f-parking" onchange="onParkingChangePage()">
+              <option value="">未設定</option>
+              <option value="あり">あり</option>
+              <option value="なし">なし</option>
+              <option value="近隣にあり">近隣にあり</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>公式SNS <span class="opt">任意</span></label>
+          <input type="url" id="f-sns" placeholder="https://instagram.com/…" />
+        </div>
+
+        <div class="form-group">
+          <label>タグ <span class="opt">任意</span></label>
+          <div class="tag-preset-list" id="f-tagPresets"></div>
+          <div class="tag-custom-input">
+            <input type="text" id="f-customTagInput" placeholder="カスタムタグを追加…"
+                   onkeydown="if(event.key==='Enter'){event.preventDefault();addTagFromInput('f')}" />
+            <button type="button" class="btn-tag-add" onclick="addTagFromInput('f')">追加</button>
+          </div>
+          <div class="tag-selected-list" id="f-tagSelected"></div>
+        </div>
+      </div>
+
+      <!-- 駐車場の詳細 -->
+      <div class="edit-section" id="f-parking-detail-section">
+        <div class="edit-section-title">駐車場の詳細</div>
+        <div class="parking-detail" id="f-parking-detail">
+          <div class="form-group">
+            <label>車サイズ別の駐めやすさ <span class="opt">任意</span></label>
+            <div class="car-rating-list" id="f-car-ratings"></div>
+          </div>
+          <div class="form-group">
+            <label>駐車可能台数 <span class="opt">任意</span></label>
+            <input type="number" id="f-parking-capacity" min="0" placeholder="例：5" />
+          </div>
+          <div class="form-group">
+            <label>駐車場メモ <span class="opt">任意</span></label>
+            <input type="text" id="f-parking-note" placeholder="例：店裏に5台・冬は除雪が遅い" />
+          </div>
+        </div>
+        <div id="f-parking-hint" style="font-size:13px;color:var(--sub);">
+          駐車場を「あり」または「近隣にあり」にすると、詳細を入力できます。
+        </div>
+      </div>
+
+      <!-- 座席・喫煙 -->
+      <div class="edit-section">
+        <div class="edit-section-title">座席・喫煙</div>
+        <div class="form-group">
+          <label>席タイプ <span class="opt">任意・複数選択可</span></label>
+          <div class="seat-type-list" id="f-seat-types"></div>
+        </div>
+        <div class="form-group">
+          <label>喫煙 <span class="opt">任意</span></label>
+          <div class="smoke-list" id="f-smoking"></div>
+        </div>
+        <div class="form-group">
+          <label>席メモ <span class="opt">任意</span></label>
+          <input type="text" id="f-seat-note" placeholder="例：カウンター4席・テーブル4席" />
+        </div>
+      </div>
+
+      <!-- 場所（地図） -->
+      <div class="edit-section">
+        <div class="edit-section-title">場所（地図ピン）</div>
+        <div class="form-group" style="margin-bottom:0;">
+          <div class="map-picker-wrap">
+            <div class="map-search">
+              <input type="text" id="pin-map-search" placeholder="住所・地名・店名で検索（例：◯◯市◯◯町）"
+                     onkeydown="if(event.key==='Enter'){event.preventDefault();searchPinLocation('pin-map','pin-map-search')}" />
+              <button type="button" onclick="searchPinLocation('pin-map','pin-map-search')">検索</button>
+            </div>
+            <div class="pin-mode-bar" id="pin-map-mode" style="display:none;">
+              <button type="button" class="pin-mode-btn active" id="pin-map-mode-store" onclick="setPinMode('pin-map','store')">📍 店舗を置く</button>
+              <button type="button" class="pin-mode-btn" id="pin-map-mode-parking" onclick="setPinMode('pin-map','parking')">🅿 駐車場を置く</button>
+              <button type="button" class="pin-clear-btn" id="pin-map-clear" onclick="clearParkingPin('pin-map')">駐車場ピンを消す</button>
+            </div>
+            <div class="map-picker-hint">地図をクリックするとピンが立ちます</div>
+            <div id="pin-map"></div>
+            <div class="pin-coords" id="pin-coords"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 初回の訪問ログ（新規登録時のみ） -->
+      <div class="edit-section" id="firstVisitSection" style="display:none;">
+        <div class="edit-section-title">初回の訪問ログ <span class="opt" style="font-weight:400;">任意</span></div>
+        <div style="font-size:12px;color:var(--sub);margin-bottom:14px;">
+          評価を選ぶと、登録と同時に1件目の訪問ログを記録します（後から詳細ページでも追加できます）。
+        </div>
+        <div class="form-group">
+          <label>来店日</label>
+          <input type="date" id="sv-date" />
+        </div>
+        <div class="form-group">
+          <label>評価</label>
+          <div class="star-input-row" id="sv-star-row">
+            <button type="button" class="star-input" data-value="1" onclick="setFirstVisitRating(1)">☆</button>
+            <button type="button" class="star-input" data-value="2" onclick="setFirstVisitRating(2)">☆</button>
+            <button type="button" class="star-input" data-value="3" onclick="setFirstVisitRating(3)">☆</button>
+            <button type="button" class="star-input" data-value="4" onclick="setFirstVisitRating(4)">☆</button>
+            <button type="button" class="star-input" data-value="5" onclick="setFirstVisitRating(5)">☆</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>メモ</label>
+          <textarea id="sv-memo" rows="3" placeholder="例：混んでたけど料理は最高だった！"></textarea>
+        </div>
+      </div>
+
+      <div class="edit-actions">
+        <a class="btn-ghost" href="index.html">キャンセル</a>
+        <button type="submit" class="btn-primary" id="saveBtn">登録する</button>
+      </div>
+    </form>
+  </div>
+</main>
+
+<!-- トースト -->
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/map.js"></script>
+<script src="js/seating.js"></script>
+<script src="js/parking.js"></script>
+<script src="js/tags.js"></script>
+<script src="js/store-edit.js"></script>
+
+</body>
+</html>

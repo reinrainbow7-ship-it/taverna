@@ -133,7 +133,7 @@ function applyFiltersAndRender(stores) {
         <div class="empty-icon">🍽️</div>
         <p>${msg}</p>
         ${!hasFilter
-          ? `<button class="btn-primary" onclick="openModal()" style="margin:0 auto">最初のお店を追加する</button>`
+          ? `<a class="btn-primary" href="store-edit.html" style="margin:0 auto;text-decoration:none;">最初のお店を追加する</a>`
           : ''}
       </div>`;
     return;
@@ -185,96 +185,6 @@ function applyFiltersAndRender(stores) {
   `).join('');
 }
 
-// ─── モーダル ─────────────────────
-
-let editingId = null;
-
-function openModal(id = null) {
-  if (isDemo()) return;
-  editingId = id;
-  const store = id ? _stores.find(s => s.id === id) : null;
-
-  document.getElementById('modalTitle').textContent  = id ? 'お店を編集する' : 'お店を登録する';
-  document.getElementById('submitBtn').textContent   = id ? '更新する' : '登録する';
-  document.getElementById('editId').value            = id || '';
-  document.getElementById('f-name').value            = store?.name    || '';
-  document.getElementById('f-area').value            = store?.area    || '';
-  document.getElementById('f-parking').value         = store?.parking || '';
-  document.getElementById('f-sns').value             = store?.sns     || '';
-
-  initTagEditor('f', store);
-  initSeatingEditor('f', store);
-  initParkingEditor('f', store);
-  document.getElementById('overlay').classList.add('open');
-
-  // ピン設置マップを初期化（表示アニメーション後に描画）
-  setTimeout(() => {
-    document.getElementById('f-name').focus();
-    initPinMap('pin-map', 'pin-coords');
-    if (store?.latitude && store?.longitude) {
-      setPinLocation('pin-map', 'pin-coords', store.latitude, store.longitude);
-    }
-    // 駐車場ピン（あり/近隣にあり のときだけ設置可）
-    setPinParkingEnabled('pin-map', ['あり', '近隣にあり'].includes(document.getElementById('f-parking').value));
-    if (store?.parking_lat && store?.parking_lng) {
-      setParkingPin('pin-map', store.parking_lat, store.parking_lng);
-    }
-  }, 250);
-}
-
-function closeModal() {
-  document.getElementById('overlay').classList.remove('open');
-  document.getElementById('storeForm').reset();
-  editingId = null;
-  destroyPinMap('pin-map');
-}
-
-function handleOverlayClick(e) {
-  if (e.target === document.getElementById('overlay')) closeModal();
-}
-
-// ─── フォーム送信 ─────────────────
-
-async function handleSubmit(e) {
-  e.preventDefault();
-  if (blockIfDemo()) return;
-
-  const { lat, lng } = getPinLatLng('pin-map');
-
-  const data = {
-    name:      document.getElementById('f-name').value.trim(),
-    area:      document.getElementById('f-area').value.trim(),
-    parking:   document.getElementById('f-parking').value,
-    sns:       document.getElementById('f-sns').value.trim() || null,
-    tags:      getTagValues('f'),
-    latitude:  lat,
-    longitude: lng,
-    ...getSeatingValues('f'),
-    ...getParkingValues('f'),
-  };
-
-  const parkPin = getParkingLatLng('pin-map');
-  data.parking_lat = parkPin.lat;
-  data.parking_lng = parkPin.lng;
-
-  if (editingId) {
-    // 既存お店を更新
-    const { error } = await db.from('stores').update(data).eq('id', editingId);
-    if (error) { console.error(error); showToast('エラーが発生しました'); return; }
-    showToast('お店情報を更新しました');
-  } else {
-    // 新規登録
-    const { error } = await db.from('stores').insert({
-      id: genId(), ...data, created_at: new Date().toISOString()
-    });
-    if (error) { console.error(error); showToast('エラーが発生しました'); return; }
-    showToast('お店を登録しました 🎉');
-  }
-
-  closeModal();
-  renderCards();
-}
-
 // ─── コンテキストメニュー ──────────
 
 let ctxTargetId = null;
@@ -298,7 +208,7 @@ function closeCtxMenu() {
 function editStore() {
   const id = ctxTargetId;
   closeCtxMenu();
-  openModal(id);
+  location.href = `store-edit.html?id=${id}`;
 }
 
 async function deleteStore() {
