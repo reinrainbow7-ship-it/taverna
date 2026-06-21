@@ -77,6 +77,7 @@ taverna/
 | seat_table | boolean | テーブル席あり（同上） |
 | seat_zashiki | boolean | 座敷あり（同上） |
 | seat_private | boolean | 個室あり（同上） |
+| seat_counter_num / seat_table_num / seat_zashiki_num / seat_private_num | integer | 各席タイプの席数（任意・数字入力で自動で「あり」に） |
 | smoking | text | 喫煙（'no'=禁煙 / 'yes'=喫煙可 / 'sep'=分煙 / null=未確認） |
 | seat_note | text | 席に関する自由メモ（任意） |
 | created_at | timestamptz | 登録日時 |
@@ -176,6 +177,7 @@ taverna/
 
 | 日付 | 内容 |
 |---|---|
+| 2026-06-22 | 登録/編集を専用ページ store-edit.html に統合・住所検索(GSI)・席数入力・テスト基盤(tests.html) |
 | 2026-06-18 | 駐車場の地図マーク（フェーズ2）を追加（店舗=赤/駐車場=青の2ピン・map.js拡張） |
 | 2026-06-18 | 駐車場情報の強化フェーズ1（車サイズ評価/台数/メモ・js/parking.js） |
 | 2026-06-17 | 座席・喫煙情報機能を追加（席タイプ/喫煙/席メモ・条件フィルター・js/seating.js） |
