@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Taverna テスト</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 820px; margin: 24px auto; padding: 0 16px; color: #222; }
+    h1 { font-size: 20px; }
+    .summary { font-size: 16px; font-weight: 700; padding: 12px 16px; border-radius: 8px; margin: 12px 0 20px; }
+    .summary.ok { background: #e8f6ee; color: #1e8449; }
+    .summary.ng { background: #fbeae8; color: #b03a2e; }
+    .suite { margin-bottom: 18px; }
+    .suite-title { font-weight: 700; font-size: 14px; margin: 14px 0 6px; color: #555; }
+    .case { font-size: 13px; padding: 4px 8px; border-radius: 6px; display: flex; gap: 8px; }
+    .case.pass { color: #1e8449; }
+    .case.fail { color: #b03a2e; background: #fdeaea; }
+    .case .mark { width: 16px; flex-shrink: 0; }
+    .case .err { color: #b03a2e; font-family: monospace; font-size: 12px; }
+    .note { font-size: 12px; color: #888; margin-top: 24px; line-height: 1.7; }
+  </style>
+</head>
+<body>
+  <h1>Taverna 自動テスト（純粋ロジック）</h1>
+  <div id="summary" class="summary">実行中…</div>
+  <div id="results"></div>
+  <div class="note">
+    ここで確認できるのは DOM・Supabase・地図に依存しない純粋ロジックのみです。<br>
+    画面操作・地図ピン・ページ遷移・実データ書き込みなどは <strong>TESTING.md の手動チェックリスト</strong>（将来は Playwright）で確認します。<br>
+    実行方法：このファイルをブラウザで開くだけ（Live Server 不要・オフライン可）。
+  </div>
+
+  <!-- showToast が呼ばれても落ちないようダミーを置く -->
+  <div id="toast" style="display:none;"></div>
+
+  <!-- テスト対象（DOM/Supabase/Leaflet に触れない純粋関数を持つものだけ）-->
+  <script src="js/utils.js"></script>
+  <script src="js/seating.js"></script>
+  <script src="js/parking.js"></script>
+  <script src="js/tags.js"></script>
+  <script src="js/bulk.js"></script>
+  <script src="js/stores.js"></script>
+
+  <script>
+    // ─── 極小テストランナー ───
+    const T = [];
+    function test(suite, name, fn) { T.push({ suite, name, fn }); }
+    function assert(cond, msg) { if (!cond) throw new Error(msg || 'assert failed'); }
+    function eq(a, b, msg) {
+      const A = JSON.stringify(a), B = JSON.stringify(b);
+      if (A !== B) throw new Error((msg ? msg + ' / ' : '') + `expected ${B}, got ${A}`);
+    }
+    function has(str, sub, msg) {
+      if (String(str).indexOf(sub) < 0) throw new Error((msg ? msg + ' / ' : '') + `"${sub}" not found in "${str}"`);
+    }
+
+    // ─── esc ───
+    test('esc', '特殊文字をエスケープ', () => eq(esc('<b>&"'), '&lt;b&gt;&amp;&quot;'));
+    test('esc', 'null は空文字', () => eq(esc(null), ''));
+    test('esc', '数値は文字列化', () => eq(esc(123), '123'));
+    test('esc', "シングルクォートは現状エスケープしない（既知）", () => eq(esc("a'b"), "a'b"));
+
+    // ─── safeUrl ───
+    test('safeUrl', 'https は通す', () => eq(safeUrl('https://x.com'), 'https://x.com'));
+    test('safeUrl', 'javascript: は弾く', () => eq(safeUrl('javascript:alert(1)'), ''));
+    test('safeUrl', '前後空白を除去', () => eq(safeUrl('  http://a.b '), 'http://a.b'));
+    test('safeUrl', '空・null は空文字', () => { eq(safeUrl(''), ''); eq(safeUrl(null), ''); });
+
+    // ─── genId ───
+    test('genId', '英数字のみ', () => assert(/^[a-z0-9]+$/.test(genId())));
+    test('genId', '毎回異なる', () => assert(genId() !== genId()));
+
+    // ─── fileExt ───
+    test('fileExt', '拡張子を小文字で取得', () => eq(fileExt({ name: 'a.JPG' }), 'jpg'));
+    test('fileExt', '拡張子なしは MIME から推定', () => eq(fileExt({ name: 'a', type: 'image/png' }), 'png'));
+    test('fileExt', '不明なら jpg', () => eq(fileExt({ name: 'a' }), 'jpg'));
+    test('fileExt', '複数ドットは末尾', () => eq(fileExt({ name: 'a.b.webp' }), 'webp'));
+
+    // ─── bulk: parseBulkText ───
+    test('bulk', '基本1行', () => {
+      const r = parseBulkText('みせ,函館');
+      eq(r.length, 1); eq(r[0].name, 'みせ'); eq(r[0].area, '函館'); eq(r[0].errors, []);
+    });
+    test('bulk', '見出し行をスキップ', () => {
+      const r = parseBulkText('店名,エリア\nみせ,函館');
+      eq(r.length, 1); eq(r[0].name, 'みせ');
+    });
+    test('bulk', 'タグはセミコロン分割', () => {
+      const r = parseBulkText('みせ,函館,あり,ラーメン;塩,,');
+      eq(r[0].parking, 'あり'); eq(r[0].tags, ['ラーメン', '塩']);
+    });
+    test('bulk', '不正な駐車場は空に正規化', () => {
+      eq(parseBulkText('みせ,函館,てきとう')[0].parking, '');
+    });
+    test('bulk', '引用符内のカンマを保持', () => {
+      eq(parseBulkText('みせ,函館,,,,"a,b"')[0].memo, 'a,b');
+    });
+    test('bulk', '店名が空はエラー', () => {
+      assert(parseBulkText(',函館')[0].errors.includes('店名が空'));
+    });
+    test('bulk', 'エリアが空はエラー', () => {
+      assert(parseBulkText('みせ')[0].errors.includes('エリアが空'));
+    });
+
+    // ─── seating: renderSeatingBadges ───
+    test('seating', '情報なしは空文字（card）', () => eq(renderSeatingBadges({}, 'card'), ''));
+    test('seating', 'カウンターで ひとり◎（card）', () => has(renderSeatingBadges({ seat_counter: true }, 'card'), 'ひとり◎'));
+    test('seating', '座敷で 子連れ◎（card）', () => has(renderSeatingBadges({ seat_zashiki: true }, 'card'), '子連れ◎'));
+    test('seating', '禁煙バッジ（card）', () => has(renderSeatingBadges({ smoking: 'no' }, 'card'), '禁煙'));
+    test('seating', '情報なしは空文字（detail）', () => eq(renderSeatingBadges({}, 'detail'), ''));
+    test('seating', 'テーブル席バッジ（detail）', () => has(renderSeatingBadges({ seat_table: true }, 'detail'), 'テーブル'));
+    test('seating', '喫煙可バッジ（detail）', () => has(renderSeatingBadges({ smoking: 'yes' }, 'detail'), '喫煙可'));
+    test('seating', '席メモはエスケープされる', () => has(renderSeatingBadges({ seat_note: '<x>' }, 'detail'), '&lt;x&gt;'));
+
+    // ─── parking: renderParkingDetail ───
+    test('parking', '情報なしは空文字', () => eq(renderParkingDetail({}), ''));
+    test('parking', '台数を表示', () => has(renderParkingDetail({ parking_capacity: 5 }), '約5台'));
+    test('parking', '余裕（緑）ラベル', () => has(renderParkingDetail({ parking_kei: 3 }), '余裕'));
+    test('parking', '軽のラベル', () => has(renderParkingDetail({ parking_kei: 3 }), '軽'));
+    test('parking', '厳しいラベル', () => has(renderParkingDetail({ parking_futsuu: 1 }), '厳しい'));
+    test('parking', '駐車場メモを表示', () => has(renderParkingDetail({ parking_note: '狭い' }), '狭い'));
+
+    // ─── 条件フィルター（CONDITION_FILTERS）───
+    const cf = k => CONDITION_FILTERS.find(c => c.key === k);
+    test('filter', 'solo: カウンターありで真', () => assert(cf('solo').test({ seat_counter: true }) === true));
+    test('filter', 'solo: なしで偽', () => assert(cf('solo').test({ seat_counter: false }) === false));
+    test('filter', 'kids: 座敷ありで真', () => assert(cf('kids').test({ seat_zashiki: true }) === true));
+    test('filter', 'group: テーブル＋個室で真', () => assert(cf('group').test({ seat_table: true, seat_private: true }) === true));
+    test('filter', 'group: 片方だけは偽', () => assert(cf('group').test({ seat_table: true }) === false));
+    test('filter', 'nosmoke: 禁煙で真', () => assert(cf('nosmoke').test({ smoking: 'no' }) === true));
+    test('filter', 'nosmoke: 喫煙可で偽', () => assert(cf('nosmoke').test({ smoking: 'yes' }) === false));
+
+    // ─── 実行＆描画 ───
+    window.addEventListener('load', () => {
+      let pass = 0, fail = 0;
+      const bySuite = {};
+      for (const t of T) {
+        let ok = true, err = '';
+        try { t.fn(); } catch (e) { ok = false; err = e.message; }
+        (bySuite[t.suite] = bySuite[t.suite] || []).push({ name: t.name, ok, err });
+        ok ? pass++ : fail++;
+      }
+
+      const results = document.getElementById('results');
+      results.innerHTML = Object.keys(bySuite).map(suite => `
+        <div class="suite">
+          <div class="suite-title">${suite}</div>
+          ${bySuite[suite].map(c => `
+            <div class="case ${c.ok ? 'pass' : 'fail'}">
+              <span class="mark">${c.ok ? '✓' : '✗'}</span>
+              <span>${c.name}${c.ok ? '' : ` — <span class="err">${c.err}</span>`}</span>
+            </div>`).join('')}
+        </div>`).join('');
+
+      const summary = document.getElementById('summary');
+      summary.textContent = `${pass} / ${pass + fail} 件 合格` + (fail ? `（${fail} 件 失敗）` : ' 🎉');
+      summary.className = 'summary ' + (fail ? 'ng' : 'ok');
+    });
+  </script>
+</body>
+</html>
