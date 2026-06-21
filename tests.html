@@ -111,6 +111,8 @@
     test('seating', 'テーブル席バッジ（detail）', () => has(renderSeatingBadges({ seat_table: true }, 'detail'), 'テーブル'));
     test('seating', '喫煙可バッジ（detail）', () => has(renderSeatingBadges({ smoking: 'yes' }, 'detail'), '喫煙可'));
     test('seating', '席メモはエスケープされる', () => has(renderSeatingBadges({ seat_note: '<x>' }, 'detail'), '&lt;x&gt;'));
+    test('seating', '席数を表示（detail）', () => has(renderSeatingBadges({ seat_counter: true, seat_counter_num: 4 }, 'detail'), '4席'));
+    test('seating', '未選択なら席数は出さない（detail）', () => eq(renderSeatingBadges({ seat_counter_num: 4 }, 'detail'), ''));
 
     // ─── parking: renderParkingDetail ───
     test('parking', '情報なしは空文字', () => eq(renderParkingDetail({}), ''));

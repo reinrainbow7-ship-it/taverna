@@ -1,8 +1,8 @@
 /* ════════════════════════════════
    seating.js — 座席・喫煙情報（入力UI・表示バッジの共通処理）
-   登録/編集モーダルが2か所（index.html と store-detail.html）あるため、
-   prefix（'f' = index, 'e' = detail）で使い分ける。
+   prefix（'f' = 登録/編集ページ）で使い分ける。
    ・席タイプ: 選択=true / 非選択=null（false は使わない）
+   ・席数: seat_*_num（任意の整数）。数字を入れるとその席タイプは自動で「あり」になる
    ・喫煙: 'no'/'yes'/'sep'、未選択=null
 ════════════════════════════════ */
 
@@ -24,20 +24,18 @@ const _seatStates = {};
 
 // ─── 入力UI ───────────────────────
 
-/**
- * 座席エディタを初期化する。
- * @param {string} prefix  'f'（index）または 'e'（detail）
- * @param {object} store   既存のお店データ（新規なら null）
- */
 function initSeatingEditor(prefix, store) {
   store = store || {};
+  const seats = {}, counts = {};
+  SEAT_TYPES.forEach(t => {
+    seats[t.key] = store[t.key] === true ? true : null;
+    const n = store[t.key + '_num'];
+    counts[t.key] = (Number.isInteger(n) && n > 0) ? n : null;
+  });
+
   _seatStates[prefix] = {
-    seats: {
-      seat_counter: store.seat_counter === true ? true : null,
-      seat_table:   store.seat_table   === true ? true : null,
-      seat_zashiki: store.seat_zashiki === true ? true : null,
-      seat_private: store.seat_private === true ? true : null,
-    },
+    seats,
+    counts,
     smoking: ['no', 'yes', 'sep'].includes(store.smoking) ? store.smoking : null,
   };
 
@@ -53,12 +51,24 @@ function renderSeatingEditor(prefix) {
 
   const seatEl = document.getElementById(`${prefix}-seat-types`);
   if (seatEl) {
-    seatEl.innerHTML = SEAT_TYPES.map(t =>
-      `<button type="button" class="seat-chip${st.seats[t.key] ? ' selected' : ''}"
-               onclick="toggleSeatType('${prefix}','${t.key}')">
-         <span class="seat-chip-icon">${t.icon}</span>${t.label}
-       </button>`
-    ).join('');
+    seatEl.innerHTML = SEAT_TYPES.map(t => {
+      const on  = st.seats[t.key];
+      const cnt = st.counts[t.key];
+      return `
+        <div class="seat-row">
+          <button type="button" id="${prefix}-seatchip-${t.key}"
+                  class="seat-chip${on ? ' selected' : ''}"
+                  onclick="toggleSeatType('${prefix}','${t.key}')">
+            <span class="seat-chip-icon">${t.icon}</span>${t.label}
+          </button>
+          <span class="seat-count-wrap">
+            <input type="number" min="1" inputmode="numeric" class="seat-count-input"
+                   value="${cnt ?? ''}" placeholder="席数"
+                   oninput="onSeatCountInput('${prefix}','${t.key}',this.value)" />
+            <span class="seat-count-unit">席</span>
+          </span>
+        </div>`;
+    }).join('');
   }
 
   const smkEl = document.getElementById(`${prefix}-smoking`);
@@ -75,34 +85,58 @@ function renderSeatingEditor(prefix) {
 function toggleSeatType(prefix, key) {
   const st = _seatStates[prefix];
   if (!st) return;
-  st.seats[key] = st.seats[key] ? null : true;   // あり ⇔ 未確認
+  if (st.seats[key]) {
+    st.seats[key] = null;     // あり → 未確認
+    st.counts[key] = null;    // 席数もクリア
+  } else {
+    st.seats[key] = true;     // 未確認 → あり
+  }
   renderSeatingEditor(prefix);
+}
+
+// 席数入力。数字（1以上）を入れたらその席タイプを自動で「あり」にする。
+// 全体を再描画すると入力中にフォーカスが外れるため、状態とチップの見た目だけ更新する。
+function onSeatCountInput(prefix, key, value) {
+  const st = _seatStates[prefix];
+  if (!st) return;
+  const n = parseInt(value, 10);
+  if (Number.isInteger(n) && n > 0) {
+    st.counts[key] = n;
+    if (!st.seats[key]) {
+      st.seats[key] = true;
+      const chip = document.getElementById(`${prefix}-seatchip-${key}`);
+      if (chip) chip.classList.add('selected');
+    }
+  } else {
+    st.counts[key] = null;
+  }
 }
 
 function setSmoking(prefix, key) {
   const st = _seatStates[prefix];
   if (!st) return;
-  st.smoking = st.smoking === key ? null : key;   // もう一度押すと未選択に戻る
+  st.smoking = st.smoking === key ? null : key;
   renderSeatingEditor(prefix);
 }
 
 /**
  * 保存用の値を取り出す。
  * @param {string} prefix
- * @returns {object} stores テーブルに渡せる座席カラム
  */
 function getSeatingValues(prefix) {
-  const st = _seatStates[prefix] || { seats: {}, smoking: null };
+  const st = _seatStates[prefix] || { seats: {}, counts: {}, smoking: null };
   const noteEl = document.getElementById(`${prefix}-seat-note`);
   const note = noteEl ? noteEl.value.trim() : '';
-  return {
-    seat_counter: st.seats.seat_counter ?? null,
-    seat_table:   st.seats.seat_table   ?? null,
-    seat_zashiki: st.seats.seat_zashiki ?? null,
-    seat_private: st.seats.seat_private ?? null,
-    smoking:      st.smoking ?? null,
-    seat_note:    note || null,
+
+  const out = {
+    smoking:   st.smoking ?? null,
+    seat_note: note || null,
   };
+  SEAT_TYPES.forEach(t => {
+    out[t.key] = st.seats[t.key] ?? null;
+    out[t.key + '_num'] = st.seats[t.key] ? (st.counts[t.key] ?? null) : null;
+  });
+  return out;
 }
 
 // ─── 表示バッジ ───────────────────
@@ -124,10 +158,12 @@ function renderSeatingBadges(store, mode) {
     return html ? `<div class="seat-card-row">${html}</div>` : '';
   }
 
-  // ── 詳細ページ: フル表示 ──
-  const seatBadges = SEAT_TYPES.filter(t => store[t.key])
-    .map(t => `<span class="seat-badge">${t.icon} ${t.label}</span>`)
-    .join('');
+  // ── 詳細ページ: フル表示（席数があれば付ける）──
+  const seatBadges = SEAT_TYPES.filter(t => store[t.key]).map(t => {
+    const n   = store[t.key + '_num'];
+    const cnt = (Number.isInteger(n) && n > 0) ? ` ${n}席` : '';
+    return `<span class="seat-badge">${t.icon} ${t.label}${cnt}</span>`;
+  }).join('');
 
   const smk = SMOKING_OPTIONS.find(o => o.key === store.smoking);
   const smkBadge = smk ? `<span class="smoke-badge ${smk.cls}">${smk.icon} ${smk.label}</span>` : '';
