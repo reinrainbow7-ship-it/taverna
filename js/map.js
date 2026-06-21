@@ -241,16 +241,28 @@ function destroyPinMap(mapId) {
 // 道南エリアに絞り込む（viewbox: 左,上,右,下 = minLng,maxLat,maxLng,minLat）
 const _GEO_VIEWBOX = '139.70,42.40,141.55,41.20';
 
-async function _geocode(q) {
+// 国土地理院（GSI）の住所検索。日本の住所に強く番地まで返せる。CORS対応・APIキー不要。
+async function _geocodeGsi(q) {
+  const url = `https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(q)}`;
+  const res  = await fetch(url);
+  const data = await res.json();
+  if (!data || data.length === 0) return null;
+  const [lng, lat] = data[0].geometry.coordinates;   // GSI は [経度, 緯度] の順
+  return { lat, lng };
+}
+
+// OpenStreetMap Nominatim。店名・ランドマーク向けの補助。道南エリアに限定。
+async function _geocodeOsm(q) {
   const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=jp&accept-language=ja&bounded=1&viewbox=${_GEO_VIEWBOX}&q=${encodeURIComponent(q)}`;
   const res  = await fetch(url, { headers: { 'Accept': 'application/json' } });
   const data = await res.json();
-  return (data && data.length > 0) ? data[0] : null;
+  if (!data || data.length === 0) return null;
+  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
 }
 
 /**
- * 住所・店名で場所を検索して、現在のモードのピンを立てる（OpenStreetMap Nominatim・無料）。
- * OSMは日本の番地データを持たないため、番地付きで見つからなければ町名にフォールバックする。
+ * 住所・店名で場所を検索して、現在のモードのピンを立てる。
+ * ① 国土地理院（住所・番地に強い）→ ② OSM（店名向け）→ ③ 番地を落としてOSM の順に試す。
  */
 async function searchPinLocation(mapId, inputId) {
   const entry = _pinMaps[mapId];
@@ -261,16 +273,19 @@ async function searchPinLocation(mapId, inputId) {
   if (!q) return;
 
   try {
-    let hit = await _geocode(q);
-    let approximate = false;
+    let hit = null;
 
-    // 番地（末尾の数字・ハイフン・丁目/番地/号）を落として町名で再検索
+    // ① 国土地理院（番地まで）。結果が道南エリア内のときだけ採用
+    const gsi = await _geocodeGsi(q);
+    if (gsi && DONAN_BOUNDS.contains(L.latLng(gsi.lat, gsi.lng))) hit = gsi;
+
+    // ② 店名・ランドマークは OSM で補助
+    if (!hit) hit = await _geocodeOsm(q);
+
+    // ③ それでも無ければ末尾の番地を落として OSM 再検索（町名レベル）
     if (!hit) {
       const fallback = q.replace(/[\s0-9０-９\-‐－―ｰ丁目番地号]+$/u, '').trim();
-      if (fallback && fallback !== q) {
-        hit = await _geocode(fallback);
-        approximate = !!hit;
-      }
+      if (fallback && fallback !== q) hit = await _geocodeOsm(fallback);
     }
 
     if (!hit) {
@@ -278,19 +293,13 @@ async function searchPinLocation(mapId, inputId) {
       return;
     }
 
-    const lat = parseFloat(hit.lat);
-    const lng = parseFloat(hit.lon);
-
     // クリック設置と同じく、現在のモードのピンを立てる
     const kind = (entry.mode === 'parking' && entry.parkingEnabled) ? 'parking' : 'store';
-    _setPinMarker(mapId, kind, lat, lng);
-    entry.map.setView([lat, lng], approximate ? 16 : 17);
+    _setPinMarker(mapId, kind, hit.lat, hit.lng);
+    entry.map.setView([hit.lat, hit.lng], 17);
     _renderPinModeUI(mapId);
     _updatePinCoords(mapId);
-
-    showToast(approximate
-      ? '番地が見つからないため町名で表示しました。クリックで微調整してください'
-      : '場所を検索しました。ピンをクリックで微調整できます');
+    showToast('場所を検索しました。ピンをクリックで微調整できます');
   } catch (e) {
     console.error('searchPinLocation error:', e);
     showToast('検索に失敗しました');
