@@ -238,9 +238,19 @@ function destroyPinMap(mapId) {
   }
 }
 
+// 道南エリアに絞り込む（viewbox: 左,上,右,下 = minLng,maxLat,maxLng,minLat）
+const _GEO_VIEWBOX = '139.70,42.40,141.55,41.20';
+
+async function _geocode(q) {
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=jp&accept-language=ja&bounded=1&viewbox=${_GEO_VIEWBOX}&q=${encodeURIComponent(q)}`;
+  const res  = await fetch(url, { headers: { 'Accept': 'application/json' } });
+  const data = await res.json();
+  return (data && data.length > 0) ? data[0] : null;
+}
+
 /**
  * 住所・店名で場所を検索して、現在のモードのピンを立てる（OpenStreetMap Nominatim・無料）。
- * 検索結果は道南エリアに限定。見つかったら地図を拡大移動する。
+ * OSMは日本の番地データを持たないため、番地付きで見つからなければ町名にフォールバックする。
  */
 async function searchPinLocation(mapId, inputId) {
   const entry = _pinMaps[mapId];
@@ -250,27 +260,37 @@ async function searchPinLocation(mapId, inputId) {
   const q = input.value.trim();
   if (!q) return;
 
-  // 道南エリアに絞り込む（viewbox: 左,上,右,下 = minLng,maxLat,maxLng,minLat）
-  const viewbox = '139.70,42.40,141.55,41.20';
-  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=jp&accept-language=ja&bounded=1&viewbox=${viewbox}&q=${encodeURIComponent(q)}`;
-
   try {
-    const res  = await fetch(url, { headers: { 'Accept': 'application/json' } });
-    const data = await res.json();
-    if (!data || data.length === 0) {
-      showToast('場所が見つかりませんでした');
+    let hit = await _geocode(q);
+    let approximate = false;
+
+    // 番地（末尾の数字・ハイフン・丁目/番地/号）を落として町名で再検索
+    if (!hit) {
+      const fallback = q.replace(/[\s0-9０-９\-‐－―ｰ丁目番地号]+$/u, '').trim();
+      if (fallback && fallback !== q) {
+        hit = await _geocode(fallback);
+        approximate = !!hit;
+      }
+    }
+
+    if (!hit) {
+      showToast('場所が見つかりませんでした。地名を簡単にして再検索してください');
       return;
     }
-    const lat = parseFloat(data[0].lat);
-    const lng = parseFloat(data[0].lon);
+
+    const lat = parseFloat(hit.lat);
+    const lng = parseFloat(hit.lon);
 
     // クリック設置と同じく、現在のモードのピンを立てる
     const kind = (entry.mode === 'parking' && entry.parkingEnabled) ? 'parking' : 'store';
     _setPinMarker(mapId, kind, lat, lng);
-    entry.map.setView([lat, lng], 17);
+    entry.map.setView([lat, lng], approximate ? 16 : 17);
     _renderPinModeUI(mapId);
     _updatePinCoords(mapId);
-    showToast('場所を検索しました。ピンをクリックで微調整できます');
+
+    showToast(approximate
+      ? '番地が見つからないため町名で表示しました。クリックで微調整してください'
+      : '場所を検索しました。ピンをクリックで微調整できます');
   } catch (e) {
     console.error('searchPinLocation error:', e);
     showToast('検索に失敗しました');
