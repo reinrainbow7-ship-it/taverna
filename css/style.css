@@ -678,3 +678,92 @@ body.admin-mode .admin-only { display: inline-flex !important; }
 .condition-chip.active {
   background: var(--accent); border-color: var(--accent); color: #fff;
 }
+
+/* ─── カードの評価集計バッジ ─── */
+.card-rating { background: #fdf3df; color: #b7791f; font-weight: 600; }
+
+/* ─── ランキングページ ─── */
+.rank-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 10px; }
+.rank-tab {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--sub);
+  transition: all .15s;
+  white-space: nowrap;
+}
+.rank-tab:hover { border-color: var(--accent); color: var(--accent); }
+.rank-tab.active {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+}
+
+.rank-note { font-size: 12px; color: var(--sub); margin-bottom: 16px; }
+
+.rank-row {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+}
+.rank-row:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.12); }
+
+.rank-num {
+  width: 36px; text-align: center; flex-shrink: 0;
+  font-size: 15px; font-weight: 700; color: var(--sub);
+}
+.rank-num.medal { font-size: 24px; }
+
+.rank-thumb {
+  width: 48px; height: 48px; border-radius: 10px;
+  object-fit: cover; flex-shrink: 0;
+}
+.rank-thumb-empty {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--tag-bg); font-size: 20px;
+}
+
+.rank-info { flex: 1; min-width: 0; }
+.rank-name {
+  font-size: 15px; font-weight: 700;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rank-sub { font-size: 12px; color: var(--sub); margin-top: 2px; }
+
+.rank-stats {
+  display: flex; flex-direction: column; align-items: flex-end;
+  gap: 2px; flex-shrink: 0;
+}
+.rank-stars { color: #f5a623; font-weight: 700; font-size: 14px; }
+.rank-count { font-size: 12px; color: var(--sub); }
+
+.rank-move-btns { display: flex; gap: 4px; flex-shrink: 0; }
+.rank-move-btns button {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 4px 8px;
+  font-size: 12px; color: var(--sub); cursor: pointer;
+  transition: all .15s;
+}
+.rank-move-btns button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.rank-move-btns button:disabled { opacity: .35; cursor: default; }
+.rank-move-btns button.danger:hover:not(:disabled) { border-color: #c0392b; color: #c0392b; }
+
+.mybest-controls {
+  margin-top: 20px; padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.mybest-add-row { display: flex; gap: 10px; }
+.mybest-add-row select { flex: 1; }
+
+/* デモ（閲覧専用）はマイベストの編集UIを隠す */
+body.demo-mode .mybest-controls,
+body.demo-mode .rank-move-btns { display: none !important; }

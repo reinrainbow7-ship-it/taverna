@@ -6,6 +6,8 @@
 // ─── キャッシュ ───────────────────
 // Supabase から取得したお店データを一時保存する
 let _stores = [];
+// 店ごとの訪問集計（calcVisitStats の結果。カードの平均★表示に使う）
+let _visitStats = {};
 
 // ─── データ管理 ───────────────────
 
@@ -90,7 +92,9 @@ function toggleCondition(key) {
 // ─── カード描画 ───────────────────
 
 async function renderCards() {
-  _stores = await loadStores();
+  const [stores, visits] = await Promise.all([loadStores(), loadAllVisits()]);
+  _stores = stores;
+  _visitStats = calcVisitStats(visits);
   renderTagFilters(_stores);
   renderConditionFilters();
   applyFiltersAndRender(_stores);
@@ -162,6 +166,7 @@ function applyFiltersAndRender(stores) {
           ${esc(s.area)}
         </span>
         ${s.parking ? `<span class="card-tag">🅿 ${esc(s.parking)}${s.parking_capacity ? '・約' + esc(String(s.parking_capacity)) + '台' : ''}</span>` : ''}
+        ${_visitStats[s.id] ? `<span class="card-tag card-rating">★ ${_visitStats[s.id].avg}・${_visitStats[s.id].count}回訪問</span>` : ''}
       </div>
       ${(s.tags || []).length > 0 ? `
       <div class="store-tags">

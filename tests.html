@@ -40,6 +40,7 @@
   <script src="js/tags.js"></script>
   <script src="js/bulk.js"></script>
   <script src="js/stores.js"></script>
+  <script src="js/ranking.js"></script>
 
   <script>
     // ─── 極小テストランナー ───
@@ -131,6 +132,43 @@
     test('filter', 'group: 片方だけは偽', () => assert(cf('group').test({ seat_table: true }) === false));
     test('filter', 'nosmoke: 禁煙で真', () => assert(cf('nosmoke').test({ smoking: 'no' }) === true));
     test('filter', 'nosmoke: 喫煙可で偽', () => assert(cf('nosmoke').test({ smoking: 'yes' }) === false));
+
+    // ─── ranking: calcVisitStats ───
+    test('ranking', '空なら空オブジェクト', () => eq(calcVisitStats([]), {}));
+    test('ranking', '平均は小数1桁に丸める', () => {
+      const st = calcVisitStats([
+        { store_id: 'a', rating: 4 }, { store_id: 'a', rating: 5 }, { store_id: 'a', rating: 4 }]);
+      eq(st.a.count, 3); eq(st.a.avg, 4.3);
+    });
+    test('ranking', '店ごとに分けて集計', () => {
+      const st = calcVisitStats([{ store_id: 'a', rating: 2 }, { store_id: 'b', rating: 5 }]);
+      eq(st.a.avg, 2); eq(st.b.avg, 5);
+    });
+
+    // ─── ranking: 並べ替え ───
+    const RS = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
+    test('ranking', '評価の高い順に並ぶ', () => {
+      const st = { a: { avg: 3, count: 1 }, b: { avg: 5, count: 1 } };
+      eq(rankByRating(RS, st).map(s => s.id), ['b', 'a']);
+    });
+    test('ranking', '訪問記録のない店は評価順に出ない', () => {
+      eq(rankByRating(RS, { a: { avg: 4, count: 1 } }).length, 1);
+    });
+    test('ranking', '評価同点は訪問回数が多い方が上', () => {
+      const st = { a: { avg: 4, count: 1 }, b: { avg: 4, count: 3 } };
+      eq(rankByRating(RS, st)[0].id, 'b');
+    });
+    test('ranking', '訪問回数の多い順に並ぶ', () => {
+      const st = { a: { avg: 5, count: 2 }, b: { avg: 3, count: 7 } };
+      eq(rankByVisits(RS, st).map(s => s.id), ['b', 'a']);
+    });
+    test('ranking', 'マイベストは my_rank 昇順・未登録は除外', () => {
+      const stores = [{ id: 'a', my_rank: 2 }, { id: 'b', my_rank: 1 }, { id: 'c', my_rank: null }];
+      eq(rankByMyRank(stores).map(s => s.id), ['b', 'a']);
+    });
+    test('ranking', '1〜3位はメダル・4位は数字', () => {
+      eq(rankMark(0), '🥇'); eq(rankMark(2), '🥉'); eq(rankMark(3), '4');
+    });
 
     // ─── 実行＆描画 ───
     window.addEventListener('load', () => {
