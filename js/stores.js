@@ -130,7 +130,7 @@ function applyFiltersAndRender(stores) {
   if (filtered.length === 0) {
     const msg = (activeTagFilters.length > 0 || activeConditions.length > 0)
       ? '選択した条件に一致するお店が見つかりません'
-      : q ? `"${q}" に一致するお店が見つかりません`
+      : q ? `"${esc(q)}" に一致するお店が見つかりません`
       : 'まだお店が登録されていません';
     grid.innerHTML = `
       <div class="empty">

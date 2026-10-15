@@ -128,24 +128,53 @@ where tablename in ('stores', 'visits', 'menu_items');
 
 ## ④ Storage（taverna-photos）のポリシー（SQL Editor）
 
-写真のアップロード・削除をログイン済みユーザーに限定します。
+写真のアップロード・更新・削除を**管理者のみ**に限定します。
 （公開URLでの閲覧はバケットが public のままなら今まで通り可能です）
 
+> **なぜ管理者限定か:** デモのパスワードはソースに公開されているため、
+> 「ログイン済みなら誰でも可」だとデモ利用者が API 経由で管理者の写真を
+> 削除したり、任意のファイルをアップロードしたりできてしまいます。
+> DB は RLS で守られていても Storage は別ポリシーなので、ここも絞ります。
+
 まず既存ポリシーを確認: **Storage** → **Policies** → `taverna-photos`。
-「全員（anon）に書き込みを許可」するポリシーがあれば削除し、以下に置き換えます。
+「全員（anon）」や旧版の `authenticated ...` ポリシーが残っていると緩いまま効くので、
+以下で旧ポリシーを消してから置き換えます。
 
 ```sql
-create policy "authenticated upload" on storage.objects
+drop policy if exists "authenticated upload" on storage.objects;
+drop policy if exists "authenticated update" on storage.objects;
+drop policy if exists "authenticated delete" on storage.objects;
+drop policy if exists "admin upload" on storage.objects;
+drop policy if exists "admin update" on storage.objects;
+drop policy if exists "admin delete" on storage.objects;
+
+create policy "admin upload" on storage.objects
   for insert to authenticated
-  with check (bucket_id = 'taverna-photos');
+  with check (
+    bucket_id = 'taverna-photos'
+    and (auth.jwt() ->> 'email') = 'admin@taverna.app'
+  );
 
-create policy "authenticated update" on storage.objects
+create policy "admin update" on storage.objects
   for update to authenticated
-  using (bucket_id = 'taverna-photos');
+  using (
+    bucket_id = 'taverna-photos'
+    and (auth.jwt() ->> 'email') = 'admin@taverna.app'
+  );
 
-create policy "authenticated delete" on storage.objects
+create policy "admin delete" on storage.objects
   for delete to authenticated
-  using (bucket_id = 'taverna-photos');
+  using (
+    bucket_id = 'taverna-photos'
+    and (auth.jwt() ->> 'email') = 'admin@taverna.app'
+  );
+```
+
+確認: 実行後、次で `taverna-photos` 向けの書き込み系ポリシーが `admin ...` の3つだけになっていること。
+
+```sql
+select policyname, cmd from pg_policies
+where schemaname = 'storage' and tablename = 'objects';
 ```
 
 ---

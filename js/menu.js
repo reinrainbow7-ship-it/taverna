@@ -30,7 +30,7 @@ async function renderMenuList() {
     <div class="menu-card">
       ${item.photo_url ? `
       <div class="menu-photo-wrap">
-        <img class="menu-photo" src="${esc(item.photo_url)}" alt="${esc(item.name)}" onclick="openPhotoModal('${esc(item.photo_url)}')" />
+        <img class="menu-photo" src="${esc(item.photo_url)}" alt="${esc(item.name)}" onclick="openPhotoModal(${esc(JSON.stringify(item.photo_url))})" />
       </div>` : ''}
       <div class="menu-card-main">
         <div class="menu-name">${esc(item.name)}</div>
@@ -51,7 +51,7 @@ async function renderMenuList() {
           <button class="order-count-btn" onclick="updateOrderCount('${item.id}', ${item.order_count || 0}, 1)">＋</button>
         </div>
         ${item.photo_url ? `
-        <button class="btn-set-thumbnail" onclick="setThumbnail('${esc(item.photo_url)}')">
+        <button class="btn-set-thumbnail" onclick="setThumbnail(${esc(JSON.stringify(item.photo_url))})">
           ⭐ サムネイルに設定
         </button>` : ''}
       </div>
