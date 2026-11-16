@@ -779,3 +779,5 @@ body.demo-mode .rank-move-btns { display: none !important; }
   box-shadow: var(--shadow);
   pointer-events: none;
 }
+/* ヘッダーのないページ（ログイン）では上端に寄せる */
+body:not(:has(header)) .offline-badge { top: 12px; }
