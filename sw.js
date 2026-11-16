@@ -36,6 +36,7 @@ const PRECACHE = [
   'js/map.js',
   'js/seating.js',
   'js/parking.js',
+  'js/winter.js',
   'js/tags.js',
   'js/stores.js',
   'js/store-edit.js',

@@ -1,7 +1,7 @@
 /* ════════════════════════════════
    store-edit.js — お店の登録・編集ページ（store-edit.html）
    ?id があれば編集、なければ新規登録。新規時のみ初回訪問ログ欄を出す。
-   座席=seating.js / 駐車場=parking.js / 地図=map.js を共通利用（prefix 'f' / mapId 'pin-map'）。
+   座席=seating.js / 駐車場=parking.js / 冬=winter.js / 地図=map.js を共通利用（prefix 'f' / mapId 'pin-map'）。
 ════════════════════════════════ */
 
 // タグUIは tags.js（initTagEditor / getTagValues / addTagFromInput, prefix 'f'）を利用。
@@ -12,6 +12,7 @@ let firstVisitRating = 0;
 // ─── 駐車場 select（ページ用ラッパー）─
 function onParkingChangePage() {
   onParkingChange('f');   // parking.js: 詳細欄の表示 + 地図の駐車場ピン可否
+  updateWinterVisibility('f');   // winter.js: 「冬の駐車」欄の表示
   syncParkingHint();
 }
 function syncParkingHint() {
@@ -52,6 +53,7 @@ async function handleStoreSave(e) {
     longitude: lng,
     ...getSeatingValues('f'),
     ...getParkingValues('f'),
+    ...getWinterValues('f'),
   };
   const park = getParkingLatLng('pin-map');
   data.parking_lat = park.lat;
@@ -117,6 +119,7 @@ async function setupForm() {
 
   initSeatingEditor('f', store);
   initParkingEditor('f', store);
+  initWinterEditor('f', store);
   syncParkingHint();
 
   // 地図のピン

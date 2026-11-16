@@ -62,13 +62,14 @@ function renderTagFilters(stores) {
     ).join('');
 }
 
-// ─── 条件フィルター（席・喫煙）─────
+// ─── 条件フィルター（席・喫煙・冬）───
 
 const CONDITION_FILTERS = [
   { key: 'solo',    label: '🙋 ひとりで入れる', test: s => s.seat_counter === true },
   { key: 'kids',    label: '👨‍👩‍👧 子連れOK',     test: s => s.seat_zashiki === true },
   { key: 'group',   label: '🍻 大人数向き',     test: s => s.seat_table === true && s.seat_private === true },
   { key: 'nosmoke', label: '🚭 完全禁煙',       test: s => s.smoking === 'no' },
+  { key: 'winter',  label: '❄ 冬でも行きやすい', test: s => isWinterEasy(s) },  // winter.js
 ];
 
 let activeConditions = [];
@@ -143,6 +144,9 @@ function applyFiltersAndRender(stores) {
     return;
   }
 
+  // 冬季（12〜3月）だけカードに冬バッジを出す（?winter=1 で強制表示。winter.js）
+  const winterOn = winterModeActive(location.search);
+
   grid.innerHTML = filtered.map(s => `
     <div class="card" onclick="handleCardClick(event, '${s.id}')">
       ${s.thumbnail_url ? `
@@ -183,6 +187,7 @@ function applyFiltersAndRender(stores) {
         </a>
       </div>` : ''}
       ${renderSeatingBadges(s, 'card')}
+      ${winterOn ? renderWinterBadges(s, 'card') : ''}
       <button class="card-map-btn" onclick="openStoreMap(event, '${s.id}')">
         📍 おみせはここ！
       </button>

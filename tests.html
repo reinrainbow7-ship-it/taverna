@@ -37,6 +37,7 @@
   <script src="js/utils.js"></script>
   <script src="js/seating.js"></script>
   <script src="js/parking.js"></script>
+  <script src="js/winter.js"></script>
   <script src="js/tags.js"></script>
   <script src="js/bulk.js"></script>
   <script src="js/export.js"></script>
@@ -179,6 +180,49 @@
     test('parking', '軽のラベル', () => has(renderParkingDetail({ parking_kei: 3 }), '軽'));
     test('parking', '厳しいラベル', () => has(renderParkingDetail({ parking_futsuu: 1 }), '厳しい'));
     test('parking', '駐車場メモを表示', () => has(renderParkingDetail({ parking_note: '狭い' }), '狭い'));
+
+    // ─── winter: 冬モード ───
+    test('winter', '12〜3月は冬季・それ以外は冬季でない', () => {
+      [[11, true], [0, true], [1, true], [2, true]].forEach(([m, w]) => eq(isWinterSeason(new Date(2026, m, 15)), w));
+      [3, 6, 10].forEach(m => eq(isWinterSeason(new Date(2026, m, 15)), false));
+    });
+    test('winter', '季節の境目（11/30は冬季でない・12/1から・3/31まで・4/1は冬季でない）', () => {
+      eq(isWinterSeason(new Date(2026, 10, 30)), false); eq(isWinterSeason(new Date(2026, 11, 1)), true);
+      eq(isWinterSeason(new Date(2027, 2, 31)), true);   eq(isWinterSeason(new Date(2027, 3, 1)), false);
+    });
+    test('winter', '?winter=1 / ?winter=0 で季節を上書きできる', () => {
+      const july = new Date(2026, 6, 1), jan = new Date(2026, 0, 10);
+      eq(winterModeActive('?winter=1', july), true);  eq(winterModeActive('?a=b&winter=0', jan), false);
+      eq(winterModeActive('', july), false);          eq(winterModeActive('?winter=9', jan), true);
+    });
+    test('winter', '冬でも行きやすい＝冬の駐車が問題なし かつ 坂道の印なし', () => {
+      eq(isWinterEasy({ winter_parking: 3 }), true);
+      eq(isWinterEasy({ winter_parking: 3, slope: true }), false);
+      eq(isWinterEasy({ winter_parking: 2 }), false);
+      eq(isWinterEasy({}), false, '未評価は含めない');
+    });
+    test('winter', 'バッジ：情報なしは空文字', () => {
+      eq(renderWinterBadges({}, 'card'), ''); eq(renderWinterBadges({ slope: null, winter_parking: null }, 'detail'), '');
+    });
+    test('winter', 'バッジ：評価ごとのラベルと色', () => {
+      has(renderWinterBadges({ winter_parking: 1 }, 'card'), '冬は厳しい'); has(renderWinterBadges({ winter_parking: 1 }, 'card'), 'pk-1');
+      has(renderWinterBadges({ winter_parking: 2 }, 'card'), '冬は台数減');
+      has(renderWinterBadges({ winter_parking: 3 }, 'detail'), '冬も駐めやすい'); has(renderWinterBadges({ winter_parking: 3 }, 'detail'), 'pk-3');
+    });
+    test('winter', 'バッジ：坂道は駐車評価がなくても出る', () => {
+      has(renderWinterBadges({ slope: true }, 'card'), '坂道あり');
+      has(renderWinterBadges({ slope: true }, 'card'), 'winter-card-row');
+    });
+    test('filter', 'winter: 冬の駐車が問題なしで真・坂道ありは偽', () => {
+      assert(cf('winter').test({ winter_parking: 3 }) === true);
+      assert(cf('winter').test({ winter_parking: 3, slope: true }) === false);
+      assert(cf('winter').test({}) === false);
+    });
+    test('export', 'お店CSVに冬の駐車と坂道が出る（既存の列位置は変えない）', () => {
+      const rows = _parseCsvRows(storesToCsv([{ id: 'w', name: 'a', area: 'b', winter_parking: 2, slope: true, my_rank: 1 }]));
+      eq(rows[0].slice(21, 24), ['冬の駐車(1-3)', '坂道', 'マイベスト順位']);
+      eq(rows[1].slice(21, 24), ['2', 'あり', '1']);
+    });
 
     // ─── 条件フィルター（CONDITION_FILTERS）───
     const cf = k => CONDITION_FILTERS.find(c => c.key === k);

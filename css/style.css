@@ -781,3 +781,7 @@ body.demo-mode .rank-move-btns { display: none !important; }
 }
 /* ヘッダーのないページ（ログイン）では上端に寄せる */
 body:not(:has(header)) .offline-badge { top: 12px; }
+
+/* ─── 冬モード（js/winter.js）─── */
+.park-badge.pk-slope { background: #eef1f5; color: #44546a; border: 1px solid #d3dae4; }
+.winter-card-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }

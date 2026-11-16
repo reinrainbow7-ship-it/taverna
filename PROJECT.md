@@ -12,7 +12,7 @@
 - **ファイル**: HTML / CSS / JS に分割済み（`index.html`, `store-detail.html`, `store-edit.html`, `ranking.html`, `login.html`, `css/style.css`, `js/*.js`）
 - **データ保存**: Supabase（PostgreSQL・クラウド保存）
 - **ホスティング**: Vercel（https://taverna-flax.vercel.app）
-- **次のステップ**: 土台固め（store-detail.html のスクリプト切り出し・Playwright E2E）（「未実装・今後の候補」の順）
+- **次のステップ**: 函館向け機能の続き（市電で行ける店 → 旬カレンダー → 観光混雑よけ → 来客案内リスト）／土台固め（「未実装・今後の候補」の順）
 
 ---
 
@@ -48,6 +48,7 @@ taverna/
     ├── map.js          # 地図機能（Leaflet + OpenStreetMap）
     ├── seating.js      # 座席・喫煙情報の入力UI・バッジ（prefix方式）
     ├── parking.js      # 駐車場詳細（車サイズ評価・台数・メモ）
+    ├── winter.js       # 冬モード（冬の駐車・坂道・冬季判定・バッジ）
     ├── tags.js         # タグ選択UI（登録/編集モーダル共通・prefix方式）
     ├── stores.js       # お店 CRUD・カード描画・検索・タグフィルター
     ├── store-edit.js   # 登録・編集ページのフォーム処理
@@ -83,6 +84,8 @@ taverna/
 | parking_kei | integer | 軽の駐めやすさ（1=厳しい/2=なんとか/3=余裕/null=未評価） |
 | parking_futsuu | integer | 普通車の駐めやすさ（同上） |
 | parking_family | integer | 大きめ/RVの駐めやすさ（同上） |
+| winter_parking | integer | 冬の駐車（1=厳しい/2=台数が減る/3=問題なし/null=未評価。駐車場なしなら null。追加SQLは下記） |
+| slope | boolean | 坂道あり（true=あり / null=なし・未確認） |
 | seat_counter | boolean | カウンター席あり（true=あり / null=未確認） |
 | seat_table | boolean | テーブル席あり（同上） |
 | seat_zashiki | boolean | 座敷あり（同上） |
@@ -92,6 +95,12 @@ taverna/
 | seat_note | text | 席に関する自由メモ（任意） |
 | my_rank | integer | マイベストの順位（1が最上位・null=未登録。追加SQL: `alter table stores add column my_rank integer;`） |
 | created_at | timestamptz | 登録日時 |
+
+> **冬モードの追加SQL**（Supabase の SQL Editor で実行。**デプロイより先に実行すること**。列が無いとお店の保存がすべて失敗する）:
+> ```sql
+> alter table stores add column if not exists winter_parking integer;
+> alter table stores add column if not exists slope boolean;
+> ```
 
 ### visits（訪問ログ）
 | カラム | 型 | 説明 |
@@ -144,6 +153,10 @@ taverna/
 - [x] CSVエクスポート（管理者専用・お店/訪問ログ/メニューを1種類ずつダウンロード・UTF-8 BOM付きでExcel対応・お店CSVの先頭6列は一括登録と同じ並びで再登録可。写真はURLのみ。PDFは未対応）
 - [x] 座席・喫煙情報（席タイプ4種・喫煙3択・席メモ・条件フィルター・ひとり◎/子連れ◎推定）
 - [x] 駐車場情報の強化（車サイズ評価・台数・メモ＋駐車場の地図ピン。店舗=赤/駐車場=青の2ピン・距離計算はなし）
+- [x] 冬モード（函館の冬向け）— 冬の駐車（厳しい/台数が減る/問題なし）と坂道ありを記録
+  - 詳細ページには通年でバッジ表示。一覧カードには冬季（12〜3月）だけ表示（`index.html?winter=1` で季節外でも強制表示）
+  - 条件フィルター「❄ 冬でも行きやすい」＝冬の駐車が問題なし かつ 坂道の印なし（未評価の店は出ない）
+  - お店CSVにも「冬の駐車」「坂道」列を出力
 - [x] カード一覧表示（サムネイル付き）
 - [x] 店名・エリアのリアルタイム検索
 - [x] タグフィルター（プリセット8種 + カスタムタグ）
@@ -193,6 +206,10 @@ taverna/
 
 優先順に並べる（上から着手）。
 
+- [ ] **市電で行ける店** — 電停の座標一覧から最寄り電停と徒歩分を自動計算・「市電で行ける」フィルター（DB変更なし・電停座標の出典確認が必要）
+- [ ] **旬カレンダー** — メニューに旬の月を付け、トップに「今月が旬のメニュー」を表示
+- [ ] **観光混雑よけ** — 「観光客で混みやすい」印＋混雑日カレンダー（GW・港まつり・お盆・クルーズ船寄港日。まずは手入力）
+- [ ] **来客案内リスト** — 名前付きリストを複数作り、地図に順番付きで表示（共有はマルチユーザー対応後）
 - [ ] **土台固め** — store-detail.html のインラインスクリプトを js に切り出し・Playwright E2E（TESTING.md フェーズB）
 - [ ] **マルチユーザー対応の本格化** — サインアップ・メール入力ログイン・管理者判定のDB化・デモ用RLSの作り直し（使わせたい相手が出てから）
 - [ ] **閲覧回数の記録** — 詳細ページを開いた回数を数えてランキングに使う（見送り候補・マルチユーザー化後に再検討）
@@ -205,6 +222,7 @@ taverna/
 
 | 日付 | 内容 |
 |---|---|
+| 2026-11-16 | 冬モードを追加（冬の駐車・坂道・冬季のカードバッジ・「冬でも行きやすい」フィルター・js/winter.js・stores.winter_parking / slope 列） |
 | 2026-11-16 | PWA化（manifest.json・sw.js・js/pwa.js・icons/。ホーム画面に追加＋オフラインは前回内容の閲覧のみ） |
 | 2026-11-16 | CSVエクスポートを追加（管理者専用・js/export.js）＋一括登録のCSV解析を引用符内の改行に対応 |
 | 2026-11-16 | メニューランキングを追加（全店舗横断・おすすめ度順/注文回数順・ranking.html にタブ2つ・DB変更なし） |

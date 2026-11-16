@@ -44,6 +44,7 @@ function storesToCsv(stores) {
     '緯度', '経度', '駐車場緯度', '駐車場経度',
     '駐車台数', '軽(1-3)', '普通車(1-3)', '大きめ(1-3)', '駐車場メモ',
     'カウンター', 'テーブル', '座敷', '個室', '喫煙', '席メモ',
+    '冬の駐車(1-3)', '坂道',
     'マイベスト順位', 'サムネイルURL', '登録日時', 'ID',
   ];
   const rows = (stores || []).map(s => [
@@ -55,6 +56,7 @@ function storesToCsv(stores) {
     _seatCell(s.seat_zashiki, s.seat_zashiki_num),
     _seatCell(s.seat_private, s.seat_private_num),
     _EXPORT_SMOKING[s.smoking] || '', s.seat_note,
+    s.winter_parking, s.slope === true ? 'あり' : '',
     s.my_rank, s.thumbnail_url, s.created_at, s.id,
   ]);
   return toCsv(header, rows);
