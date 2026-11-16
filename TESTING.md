@@ -18,6 +18,7 @@ Taverna のテストは2層構成です。
 カバー範囲：
 - `utils.js`：`esc` / `safeUrl` / `fileExt` / `genId`
 - `bulk.js`：CSV解析（`parseBulkText`／引用符・タグ分割・見出しスキップ・必須チェック）
+- `export.js`：CSV生成（`csvCell` / `toCsv`・お店/訪問ログ/メニューの列・一括登録への往復）
 - `seating.js`：`renderSeatingBadges`（カード/詳細・空時・エスケープ）
 - `parking.js`：`renderParkingDetail`（台数・評価ラベル・メモ）
 - `stores.js`：条件フィルター `CONDITION_FILTERS` の判定
@@ -74,6 +75,12 @@ Taverna のテストは2層構成です。
 ### 一括登録（管理者・index.html）
 - [ ] CSVを貼ってプレビュー → 必須未入力行が赤く除外される
 - [ ] 「○件を登録」で一覧に反映される
+
+### エクスポート（管理者・index.html）
+- [ ] 「エクスポート」ボタンは管理者だけに出る（デモでは出ない）
+- [ ] お店 / 訪問ログ / メニュー の各ボタンでCSVがダウンロードされる（`taverna-stores-日付.csv` など）
+- [ ] Excelで開いて日本語が文字化けしない／件数が画面と合う
+- [ ] お店CSVの中身を一括登録に貼ってプレビューすると、店名〜メモが正しく読める（実際の登録は重複するので不要）
 
 ---
 

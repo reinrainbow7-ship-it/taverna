@@ -36,6 +36,13 @@
       </svg>
       一括登録
     </button>
+    <button class="btn-ghost admin-only" onclick="openExportModal()" title="データをCSVファイルで書き出す">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      エクスポート
+    </button>
     <a class="btn-primary" href="store-edit.html" style="text-decoration:none;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -110,6 +117,29 @@
   </div>
 </div>
 
+<!-- エクスポートモーダル（管理者専用） -->
+<div class="overlay" id="export-overlay" onclick="handleExportOverlayClick(event)">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-title">
+      <span>CSVでエクスポート</span>
+      <button class="modal-close" onclick="closeExportModal()">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--sub);line-height:1.8;margin-bottom:14px;">
+      記録をCSVファイルでダウンロードします（Excelでそのまま開けます）。<br>
+      ・お店CSVの先頭6列は「一括登録」と同じ並びなので、貼り付けて再登録できます<br>
+      ・写真はURLのみ書き出します（画像ファイル自体は含みません）
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button type="button" class="btn-ghost" onclick="exportCsv('stores')">🏠 お店</button>
+      <button type="button" class="btn-ghost" onclick="exportCsv('visits')">📅 訪問ログ</button>
+      <button type="button" class="btn-ghost" onclick="exportCsv('menus')">🍴 メニュー</button>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn-ghost" onclick="closeExportModal()">閉じる</button>
+    </div>
+  </div>
+</div>
+
 <!-- 地図表示モーダル -->
 <div class="map-overlay" id="map-overlay" onclick="handleMapOverlayClick(event)">
   <div class="map-modal">
@@ -139,6 +169,7 @@
 <script src="js/ranking.js"></script>
 <script src="js/stores.js"></script>
 <script src="js/bulk.js"></script>
+<script src="js/export.js"></script>
 <script>
   // ─── 初期化 ───
   checkAuth().then(() => renderCards());
@@ -148,7 +179,7 @@
     if (!document.getElementById('ctxMenu').contains(e.target)) closeCtxMenu();
   });
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeCtxMenu(); closeMapModal(); closeBulkModal(); }
+    if (e.key === 'Escape') { closeCtxMenu(); closeMapModal(); closeBulkModal(); closeExportModal(); }
   });
 </script>
 

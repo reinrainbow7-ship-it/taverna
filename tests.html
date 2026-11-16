@@ -39,6 +39,7 @@
   <script src="js/parking.js"></script>
   <script src="js/tags.js"></script>
   <script src="js/bulk.js"></script>
+  <script src="js/export.js"></script>
   <script src="js/stores.js"></script>
   <script src="js/ranking.js"></script>
 
@@ -101,6 +102,60 @@
     });
     test('bulk', 'エリアが空はエラー', () => {
       assert(parseBulkText('みせ')[0].errors.includes('エリアが空'));
+    });
+
+    test('bulk', '引用符内の改行は1つの値として保持', () => {
+      const r = parseBulkText('みせ,函館,,,,"1行目\n2行目"\nべつ,元町');
+      eq(r.length, 2); eq(r[0].memo, '1行目\n2行目'); eq(r[1].name, 'べつ');
+    });
+    test('bulk', 'CRLF・空行・先頭BOMを許容', () => {
+      const r = parseBulkText('﻿店名,エリア\r\n\r\nみせ,函館\r\n');
+      eq(r.length, 1); eq(r[0].name, 'みせ'); eq(r[0].area, '函館');
+    });
+    test('bulk', '"" は引用符1文字', () => {
+      eq(parseBulkText('みせ,函館,,,,"彼は ""うまい"" と言った"')[0].memo, '彼は "うまい" と言った');
+    });
+
+    // ─── export: CSV生成 ───
+    test('export', '普通の値はそのまま・null は空', () => {
+      eq(csvCell('abc'), 'abc'); eq(csvCell(null), ''); eq(csvCell(undefined), ''); eq(csvCell(0), '0');
+    });
+    test('export', 'カンマ・引用符・改行を含む値は囲む', () => {
+      eq(csvCell('a,b'), '"a,b"'); eq(csvCell('a"b'), '"a""b"'); eq(csvCell('a\nb'), '"a\nb"');
+    });
+    test('export', '行は CRLF 区切り・見出しが先頭', () => {
+      eq(toCsv(['x', 'y'], [[1, 2], [3, null]]), 'x,y\r\n1,2\r\n3,');
+    });
+    test('export', 'ファイル名は種類と日付', () => {
+      eq(exportFileName('stores', new Date(2026, 0, 5)), 'taverna-stores-2026-01-05.csv');
+    });
+    const ES = [{
+      id: 's1', name: 'ラーメン "函館"', area: '五稜郭', parking: 'あり', tags: ['ラーメン', '塩'],
+      sns: 'https://x.com/a', memo: '濃厚、また行きたい\n次は味噌',
+      seat_counter: true, seat_counter_num: 4, seat_table: true, seat_table_num: null, smoking: 'sep',
+    }, { id: 's2', name: 'カフェ', area: '元町', parking: null, tags: null, sns: null, memo: null }];
+    test('export', 'お店CSVの先頭6列は一括登録と同じ並び', () => {
+      eq(storesToCsv([]).split(',').slice(0, 6), ['店名', 'エリア', '駐車場', 'タグ', 'SNS', 'メモ']);
+    });
+    test('export', '席は席数優先・ありのみは「あり」・喫煙はラベル', () => {
+      const cols = _parseCsvRows(storesToCsv(ES))[1];
+      eq(cols.slice(15, 20), ['4', 'あり', '', '', '分煙']);
+    });
+    test('export', 'お店CSVを一括登録で読み戻すと同じ内容になる（往復）', () => {
+      const r = parseBulkText(storesToCsv(ES));
+      eq(r.length, 2);
+      eq(r[0], { name: 'ラーメン "函館"', area: '五稜郭', parking: 'あり', tags: ['ラーメン', '塩'],
+                 sns: 'https://x.com/a', memo: '濃厚、また行きたい\n次は味噌', errors: [] });
+      eq(r[1], { name: 'カフェ', area: '元町', parking: '', tags: [], sns: '', memo: '', errors: [] });
+    });
+    test('export', '訪問ログCSVは店名を引いて出す', () => {
+      const rows = _parseCsvRows(visitsToCsv([{ id: 'v1', store_id: 's2', date: '2026-07-01', rating: 5, memo: 'うまい' }], ES));
+      eq(rows[0].slice(0, 4), ['店名', '来店日', '評価', 'メモ']);
+      eq(rows[1].slice(0, 4), ['カフェ', '2026-07-01', '5', 'うまい']);
+    });
+    test('export', 'メニューCSVは価格0を空にしない', () => {
+      const rows = _parseCsvRows(menusToCsv([{ id: 'm1', store_id: 's2', name: '水', price: 0, recommend_rating: 3, order_count: 2 }], ES));
+      eq(rows[1].slice(0, 5), ['カフェ', '水', '0', '3', '2']);
     });
 
     // ─── seating: renderSeatingBadges ───

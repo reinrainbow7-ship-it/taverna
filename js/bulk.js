@@ -36,44 +36,54 @@ function handleBulkOverlayClick(e) {
 // ─── 解析 ─────────────────────────
 
 /**
- * CSVの1行を列に分解する。
- * 半角カンマ , を区切りとし、"…" で囲んだ値の中のカンマは区切りにしない。
- * "" は引用符内のエスケープされた " として扱う。
+ * CSVテキストを「行 × 列」の配列に分解する。
+ * 半角カンマ , を区切りとし、"…" で囲んだ値の中のカンマ・改行は区切りにしない。
+ * "" は引用符内のエスケープされた " として扱う。空行は捨てる。
+ * （エクスポートしたCSVはメモに改行を含み得るので、行分割より先に引用符を見る）
  */
-function _parseCsvLine(line) {
-  const out = [];
+function _parseCsvRows(text) {
+  const src = String(text ?? '').replace(/^﻿/, '');  // BOM を除去
+  const rows = [];
+  let row = [];
   let cur = '';
   let inQuotes = false;
 
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
+  const endRow = () => {
+    row.push(cur); cur = '';
+    if (row.some(c => c.trim() !== '')) rows.push(row);
+    row = [];
+  };
+
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i];
     if (inQuotes) {
       if (ch === '"') {
-        if (line[i + 1] === '"') { cur += '"'; i++; }  // "" → "
+        if (src[i + 1] === '"') { cur += '"'; i++; }  // "" → "
         else inQuotes = false;
       } else {
         cur += ch;
       }
     } else {
       if (ch === '"') inQuotes = true;
-      else if (ch === ',') { out.push(cur); cur = ''; }
+      else if (ch === ',') { row.push(cur); cur = ''; }
+      else if (ch === '\n') endRow();
+      else if (ch === '\r') { /* \r\n の \r は無視 */ }
       else cur += ch;
     }
   }
-  out.push(cur);
-  return out;
+  endRow();
+  return rows;
 }
 
 /**
  * 貼り付けテキスト（カンマ区切り）を行ごとに解析する。
  * 各行は { name, area, parking, tags, sns, memo, errors } を持つ。
+ * 7列目以降（エクスポートCSVの追加列）は無視する。
  */
 function parseBulkText(text) {
-  const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
   const rows = [];
 
-  lines.forEach((line, idx) => {
-    const cols = _parseCsvLine(line);
+  _parseCsvRows(text).forEach((cols, idx) => {
 
     // 1行目が見出し（「店名」を含む）なら飛ばす
     if (idx === 0 && /店名/.test(cols[0] || '')) return;
