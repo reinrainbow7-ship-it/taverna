@@ -170,6 +170,35 @@
       eq(rankMark(0), '🥇'); eq(rankMark(2), '🥉'); eq(rankMark(3), '4');
     });
 
+    // ─── ranking: メニューランキング ───
+    test('ranking', 'メニューはおすすめ度の高い順に並ぶ', () => {
+      const ms = [{ id: 'a', recommend_rating: 3 }, { id: 'b', recommend_rating: 5 }];
+      eq(rankMenusByRecommend(ms).map(m => m.id), ['b', 'a']);
+    });
+    test('ranking', 'おすすめ度が未設定(0/null)のメニューは出ない', () => {
+      const ms = [{ id: 'a', recommend_rating: 0 }, { id: 'b', recommend_rating: null }, { id: 'c', recommend_rating: 4 }];
+      eq(rankMenusByRecommend(ms).map(m => m.id), ['c']);
+    });
+    test('ranking', 'おすすめ度同点は注文回数が多い方が上', () => {
+      const ms = [{ id: 'a', recommend_rating: 4, order_count: null }, { id: 'b', recommend_rating: 4, order_count: 3 }];
+      eq(rankMenusByRecommend(ms)[0].id, 'b');
+    });
+    test('ranking', 'メニューは注文回数の多い順に並ぶ', () => {
+      const ms = [{ id: 'a', order_count: 2, recommend_rating: 5 }, { id: 'b', order_count: 7, recommend_rating: 1 }];
+      eq(rankMenusByOrders(ms).map(m => m.id), ['b', 'a']);
+    });
+    test('ranking', '注文回数0/nullのメニューは出ない', () => {
+      const ms = [{ id: 'a', order_count: 0 }, { id: 'b', order_count: null }, { id: 'c', order_count: 1 }];
+      eq(rankMenusByOrders(ms).map(m => m.id), ['c']);
+    });
+    test('ranking', '注文回数同点はおすすめ度が高い方が上', () => {
+      const ms = [{ id: 'a', order_count: 2, recommend_rating: null }, { id: 'b', order_count: 2, recommend_rating: 4 }];
+      eq(rankMenusByOrders(ms)[0].id, 'b');
+    });
+    test('ranking', 'メニュー並べ替えは空・nullでも落ちない', () => {
+      eq(rankMenusByRecommend(null), []); eq(rankMenusByOrders([]), []);
+    });
+
     // ─── 実行＆描画 ───
     window.addEventListener('load', () => {
       let pass = 0, fail = 0;

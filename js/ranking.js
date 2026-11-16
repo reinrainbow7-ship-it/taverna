@@ -1,5 +1,5 @@
 /* ════════════════════════════════
-   ranking.js — ランキング（評価順・訪問回数順・マイベスト）
+   ranking.js — ランキング（評価順・訪問回数順・メニュー・マイベスト）
    前半は tests.html で検証する純粋ロジック。
    index.html でもカードの評価集計（calcVisitStats）に使う。
 ════════════════════════════════ */
@@ -49,6 +49,24 @@ function rankByMyRank(stores) {
     .sort((a, b) => a.my_rank - b.my_rank);
 }
 
+/** メニューのおすすめ度順（同点は注文回数が多い方が上）。おすすめ度が未設定のものは含めない */
+function rankMenusByRecommend(items) {
+  return (items || [])
+    .filter(m => (m.recommend_rating || 0) > 0)
+    .sort((a, b) =>
+      (b.recommend_rating - a.recommend_rating) ||
+      ((b.order_count || 0) - (a.order_count || 0)));
+}
+
+/** メニューの注文回数順（同点はおすすめ度が高い方が上）。注文回数0のものは含めない */
+function rankMenusByOrders(items) {
+  return (items || [])
+    .filter(m => (m.order_count || 0) > 0)
+    .sort((a, b) =>
+      (b.order_count - a.order_count) ||
+      ((b.recommend_rating || 0) - (a.recommend_rating || 0)));
+}
+
 /** 順位の表示文字（1〜3位はメダル、それ以外は数字） */
 function rankMark(i) {
   return ['🥇', '🥈', '🥉'][i] || String(i + 1);
@@ -63,16 +81,27 @@ async function loadAllVisits() {
   return data || [];
 }
 
+/** 全メニューのランキング用データを取得する */
+async function loadAllMenuItems() {
+  const { data, error } = await db.from('menu_items')
+    .select('id, store_id, name, price, photo_url, recommend_rating, order_count');
+  if (error) { console.error('loadAllMenuItems error:', error); return []; }
+  return data || [];
+}
+
 // ─── ランキングページ（ranking.html）───
 
 let _rankStores = [];
 let _rankStats  = {};
+let _rankMenus  = [];
 let _rankTab    = 'rating';
 
 async function initRanking() {
-  const [stores, visits] = await Promise.all([loadStores(), loadAllVisits()]);
+  const [stores, visits, menus] = await Promise.all(
+    [loadStores(), loadAllVisits(), loadAllMenuItems()]);
   _rankStores = stores;
   _rankStats  = calcVisitStats(visits);
+  _rankMenus  = menus;
   renderRanking();
 }
 
@@ -86,6 +115,7 @@ function switchRankTab(tab) {
 function renderRanking() {
   if (_rankTab === 'mybest') { renderMyBest(); return; }
   document.getElementById('mybest-controls').style.display = 'none';
+  if (_rankTab === 'menu-rec' || _rankTab === 'menu-orders') { renderMenuRanking(); return; }
   document.getElementById('rank-note').textContent =
     '訪問記録のあるお店だけが並びます';
 
@@ -118,6 +148,59 @@ function renderRanking() {
       <div class="rank-stats">
         <span class="rank-stars">★ ${st.avg}</span>
         <span class="rank-count">${st.count}回訪問</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── メニューランキング（全店舗横断）───
+
+function renderMenuRanking() {
+  const byRec = _rankTab === 'menu-rec';
+  document.getElementById('rank-note').textContent = byRec
+    ? 'おすすめ度を付けたメニューが全店舗から並びます'
+    : '1回以上注文したメニューが全店舗から並びます';
+
+  const ranked = byRec
+    ? rankMenusByRecommend(_rankMenus)
+    : rankMenusByOrders(_rankMenus);
+
+  const list = document.getElementById('rank-list');
+  if (ranked.length === 0) {
+    list.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">🍴</div>
+        <p>${byRec
+          ? 'まだおすすめ度の付いたメニューがありません。<br>お店の詳細ページでメニューに★を付けるとここに並びます。'
+          : 'まだ注文回数の記録がありません。<br>お店の詳細ページでメニューの「＋」を押すとここに並びます。'}</p>
+      </div>`;
+    return;
+  }
+
+  const storeOf = {};
+  _rankStores.forEach(s => { storeOf[s.id] = s; });
+
+  list.innerHTML = ranked.map((m, i) => {
+    const store = storeOf[m.store_id];
+    const sub = [
+      store ? esc(store.name) : '',
+      m.price !== null && m.price !== undefined ? `¥${Number(m.price).toLocaleString()}` : '',
+    ].filter(Boolean).join(' ・ ');
+    const rating = m.recommend_rating || 0;
+    const orders = m.order_count || 0;
+    return `
+    <div class="rank-row" onclick="location.href='store-detail.html?id=${esc(encodeURIComponent(m.store_id))}'">
+      <div class="rank-num${i < 3 ? ' medal' : ''}">${rankMark(i)}</div>
+      ${m.photo_url
+        ? `<img class="rank-thumb" src="${esc(m.photo_url)}" alt="" />`
+        : `<div class="rank-thumb rank-thumb-empty">🍴</div>`}
+      <div class="rank-info">
+        <div class="rank-name">${esc(m.name)}</div>
+        <div class="rank-sub">${sub}</div>
+      </div>
+      <div class="rank-stats">
+        ${rating ? `<span class="rank-stars">★ ${rating}</span>` : ''}
+        ${orders ? `<span class="rank-count">${orders}回注文</span>` : ''}
       </div>
     </div>`;
   }).join('');
