@@ -19,6 +19,7 @@ Taverna のテストは2層構成です。
 - `utils.js`：`esc` / `safeUrl` / `fileExt` / `genId`
 - `bulk.js`：CSV解析（`parseBulkText`／引用符・タグ分割・見出しスキップ・必須チェック）
 - `export.js`：CSV生成（`csvCell` / `toCsv`・お店/訪問ログ/メニューの列・一括登録への往復）
+- `sw.js`：リクエストの振り分け（`routeFor`／認証・書き込みは素通し・事前キャッシュの一覧）
 - `seating.js`：`renderSeatingBadges`（カード/詳細・空時・エスケープ）
 - `parking.js`：`renderParkingDetail`（台数・評価ラベル・メモ）
 - `stores.js`：条件フィルター `CONDITION_FILTERS` の判定
@@ -81,6 +82,21 @@ Taverna のテストは2層構成です。
 - [ ] お店 / 訪問ログ / メニュー の各ボタンでCSVがダウンロードされる（`taverna-stores-日付.csv` など）
 - [ ] Excelで開いて日本語が文字化けしない／件数が画面と合う
 - [ ] お店CSVの中身を一括登録に貼ってプレビューすると、店名〜メモが正しく読める（実際の登録は重複するので不要）
+
+### PWA（スマホ実機・本番URLで確認）
+Service Worker は `file://` では動かない。Live Server（localhost）か本番URLで確認する。
+
+- [ ] Android Chrome：メニュー →「ホーム画面に追加／アプリをインストール」でアイコンが出る
+- [ ] iPhone Safari：共有 →「ホーム画面に追加」でアイコンが出る
+- [ ] ホーム画面のアイコンから開くと、アドレスバーなしの単独ウィンドウで起動する
+- [ ] 一度オンラインで一覧・詳細・ランキングを開いた後、**機内モード**にして開き直すと前回の内容が出る
+- [ ] オフライン中は画面上部に「📡 オフライン：前回の内容を表示中」が出る／オンラインに戻すと消える
+- [ ] オフライン中に訪問の追加などをするとエラーのトーストが出る（保存されない）
+- [ ] オンラインでコードを更新してデプロイ → 再読み込みで新しい内容になる（古い画面が残らない）
+- [ ] ログアウト → オフラインで開いてもデータが出ない（ログイン画面に戻る）
+
+> うまく更新されないとき：PC の Chrome なら DevTools → Application → Service Workers → Unregister、
+> Storage → Clear site data。
 
 ---
 

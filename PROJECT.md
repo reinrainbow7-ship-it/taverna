@@ -12,7 +12,7 @@
 - **ファイル**: HTML / CSS / JS に分割済み（`index.html`, `store-detail.html`, `store-edit.html`, `ranking.html`, `login.html`, `css/style.css`, `js/*.js`）
 - **データ保存**: Supabase（PostgreSQL・クラウド保存）
 - **ホスティング**: Vercel（https://taverna-flax.vercel.app）
-- **次のステップ**: PWA化（「未実装・今後の候補」の順）
+- **次のステップ**: 土台固め（store-detail.html のスクリプト切り出し・Playwright E2E）（「未実装・今後の候補」の順）
 
 ---
 
@@ -35,12 +35,16 @@ taverna/
 ├── ranking.html        # ランキング（評価順・訪問回数順・マイベスト）
 ├── login.html          # ログインページ
 ├── tests.html          # 純粋ロジックの自動テスト（ブラウザで開くだけ）
+├── manifest.json       # PWA マニフェスト（アプリ名・アイコン・配色）
+├── sw.js               # Service Worker（キャッシュ戦略・オフライン閲覧）
+├── icons/              # アプリアイコン（192 / 512 / apple-touch-icon）
 ├── css/
 │   └── style.css       # 全ページ共通スタイル
 └── js/
     ├── supabase.js     # Supabase クライアント設定
     ├── utils.js        # 共通関数（genId / esc / safeUrl / showToast）
     ├── auth.js         # パスワード認証（checkAuth / login / logout）
+    ├── pwa.js          # Service Worker の登録・オフライン表示バッジ（全ページで読み込む）
     ├── map.js          # 地図機能（Leaflet + OpenStreetMap）
     ├── seating.js      # 座席・喫煙情報の入力UI・バッジ（prefix方式）
     ├── parking.js      # 駐車場詳細（車サイズ評価・台数・メモ）
@@ -126,6 +130,7 @@ taverna/
 | 認証 | Supabase Auth（管理者 + デモの2アカウント・RLSでデータ分離） |
 | 地図 | Leaflet.js + OpenStreetMap（APIキー不要・無料） |
 | ホスティング | Vercel（GitHub 連携・自動デプロイ） |
+| PWA | Web App Manifest + Service Worker（ライブラリなし・手書き） |
 | バージョン管理 | Git + GitHub |
 | エディタ | VS Code（Live Server / Prettier / GitLens） |
 
@@ -175,6 +180,12 @@ taverna/
   - 管理者の記録を**閲覧専用**で表示（RLSのSELECT専用ポリシー + フロントで追加/編集/削除ボタンを非表示）
 - [x] RLS有効化（user_id 列 + 自分の行のみアクセス可・セットアップ手順は DEMO_SETUP.md）
 - [x] Vercel デプロイ（公開URL）
+- [x] PWA（ホーム画面に追加・オフライン閲覧）
+  - `manifest.json` + `icons/` でホーム画面に追加できる（単独ウィンドウで起動）
+  - `sw.js`（Service Worker）: オンラインなら常に最新、つながらないときだけ前回の内容を表示
+  - オフラインでできるのは**閲覧のみ**（追加・編集・削除は不可。地図タイル・住所検索も不可）
+  - 認証の通信はキャッシュしない。保存したデータはログアウト時に削除
+  - **ページや js を追加したら `sw.js` の `PRECACHE` にも足す**
 
 ---
 
@@ -182,7 +193,6 @@ taverna/
 
 優先順に並べる（上から着手）。
 
-- [ ] **PWA化** — スマホのホーム画面に追加、オフラインは前回表示内容の閲覧のみ
 - [ ] **土台固め** — store-detail.html のインラインスクリプトを js に切り出し・Playwright E2E（TESTING.md フェーズB）
 - [ ] **マルチユーザー対応の本格化** — サインアップ・メール入力ログイン・管理者判定のDB化・デモ用RLSの作り直し（使わせたい相手が出てから）
 - [ ] **閲覧回数の記録** — 詳細ページを開いた回数を数えてランキングに使う（見送り候補・マルチユーザー化後に再検討）
@@ -195,6 +205,7 @@ taverna/
 
 | 日付 | 内容 |
 |---|---|
+| 2026-11-16 | PWA化（manifest.json・sw.js・js/pwa.js・icons/。ホーム画面に追加＋オフラインは前回内容の閲覧のみ） |
 | 2026-11-16 | CSVエクスポートを追加（管理者専用・js/export.js）＋一括登録のCSV解析を引用符内の改行に対応 |
 | 2026-11-16 | メニューランキングを追加（全店舗横断・おすすめ度順/注文回数順・ranking.html にタブ2つ・DB変更なし） |
 | 2026-07-05 | ランキングページを追加（評価順・訪問回数順・マイベスト）＋一覧カードに平均★表示（ranking.html・js/ranking.js・stores.my_rank 列） |

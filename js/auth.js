@@ -113,5 +113,9 @@ async function loginAsDemo() {
  */
 async function logout() {
   await db.auth.signOut();
+  // オフライン閲覧用に Service Worker が保存したデータを消す（sw.js の DATA_CACHE）
+  if (window.caches) {
+    try { await caches.delete('taverna-data'); } catch (e) { console.error(e); }
+  }
   location.href = 'login.html';
 }

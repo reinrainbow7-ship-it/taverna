@@ -767,3 +767,15 @@ body.admin-mode .admin-only { display: inline-flex !important; }
 /* デモ（閲覧専用）はマイベストの編集UIを隠す */
 body.demo-mode .mybest-controls,
 body.demo-mode .rank-move-btns { display: none !important; }
+
+/* ─── PWA：オフライン表示（js/pwa.js）─── */
+.offline-badge {
+  position: fixed; top: 68px; left: 50%; transform: translateX(-50%);
+  z-index: 1000;
+  max-width: calc(100vw - 24px);
+  background: var(--text); color: #fff;
+  font-size: 12px; line-height: 1.5; text-align: center;
+  padding: 6px 14px; border-radius: 999px;
+  box-shadow: var(--shadow);
+  pointer-events: none;
+}

@@ -42,6 +42,8 @@
   <script src="js/export.js"></script>
   <script src="js/stores.js"></script>
   <script src="js/ranking.js"></script>
+  <!-- sw.js は振り分け判定（routeFor）だけをテストする。イベント登録は window 上では発火しない -->
+  <script src="sw.js"></script>
 
   <script>
     // ─── 極小テストランナー ───
@@ -252,6 +254,41 @@
     });
     test('ranking', 'メニュー並べ替えは空・nullでも落ちない', () => {
       eq(rankMenusByRecommend(null), []); eq(rankMenusByOrders([]), []);
+    });
+
+    // ─── sw: リクエストの振り分け ───
+    const SWO = 'https://taverna.example';
+    test('sw', '自サイトのGETは shell', () => {
+      eq(routeFor('GET', SWO + '/store-detail.html?id=abc', SWO), 'shell');
+      eq(routeFor('GET', SWO + '/js/stores.js', SWO), 'shell');
+    });
+    test('sw', 'Supabaseのデータ取得は data・写真は img', () => {
+      eq(routeFor('GET', 'https://x.supabase.co/rest/v1/stores?select=*', SWO), 'data');
+      eq(routeFor('GET', 'https://x.supabase.co/storage/v1/object/public/taverna-photos/a/b.jpg', SWO), 'img');
+    });
+    test('sw', '認証は絶対にキャッシュしない（素通し）', () => {
+      eq(routeFor('GET', 'https://x.supabase.co/auth/v1/user', SWO), null);
+      eq(routeFor('POST', 'https://x.supabase.co/auth/v1/token?grant_type=password', SWO), null);
+    });
+    test('sw', '書き込み（GET以外）は素通し', () => {
+      eq(routeFor('POST', 'https://x.supabase.co/rest/v1/stores', SWO), null);
+      eq(routeFor('PATCH', 'https://x.supabase.co/rest/v1/stores?id=eq.1', SWO), null);
+      eq(routeFor('DELETE', 'https://x.supabase.co/rest/v1/visits?id=eq.1', SWO), null);
+      eq(routeFor('POST', SWO + '/x', SWO), null);
+    });
+    test('sw', 'CDNは cdn・地図タイルや住所検索は素通し', () => {
+      eq(routeFor('GET', 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2', SWO), 'cdn');
+      eq(routeFor('GET', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', SWO), 'cdn');
+      eq(routeFor('GET', 'https://tile.openstreetmap.org/1/2/3.png', SWO), null);
+      eq(routeFor('GET', 'https://msearch.gsi.go.jp/address-search/AddressSearch?q=a', SWO), null);
+    });
+    test('sw', 'supabase.co に似せた別ドメインは data 扱いしない', () => {
+      eq(routeFor('GET', 'https://evilsupabase.co/rest/v1/stores', SWO), null);
+      eq(routeFor('GET', 'https://x.supabase.co.evil.com/rest/v1/stores', SWO), null);
+    });
+    test('sw', '事前キャッシュにページ5つと pwa.js が入っている', () => {
+      ['index.html', 'store-detail.html', 'store-edit.html', 'ranking.html', 'login.html', 'js/pwa.js']
+        .forEach(f => assert(PRECACHE.includes(f), f + ' が PRECACHE に無い'));
     });
 
     // ─── 実行＆描画 ───
